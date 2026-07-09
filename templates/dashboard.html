@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>APEX — Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            background: #0a0a0a;
+            color: #e5e5e5;
+            font-family: 'Courier New', monospace;
+            min-height: 100vh;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: 
+                linear-gradient(rgba(249, 115, 22, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(249, 115, 22, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .header {
+            position: relative;
+            z-index: 1;
+            background: #0f0f0f;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.3);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .header-logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #f97316;
+            letter-spacing: 8px;
+            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+        }
+        
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .header-right a {
+            color: #6b7280;
+            text-decoration: none;
+            font-size: 12px;
+            letter-spacing: 2px;
+            transition: color 0.3s;
+        }
+        
+        .header-right a:hover { color: #f97316; }
+        
+        .main {
+            position: relative;
+            z-index: 1;
+            padding: 20px 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .target-section {
+            background: #141414;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+            padding: 25px;
+            margin-bottom: 20px;
+        }
+        
+        .target-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        
+        .target-input {
+            flex: 1;
+            min-width: 300px;
+            padding: 14px 18px;
+            background: #0a0a0a;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+            color: #e5e5e5;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            letter-spacing: 1px;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        
+        .target-input:focus {
+            border-color: #f97316;
+            box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
+        }
+        
+        .target-input::placeholder { color: #404040; }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        
+        .btn-full {
+            background: #f97316;
+            color: #0a0a0a;
+        }
+        
+        .btn-full:hover {
+            background: #fb923c;
+            box-shadow: 0 0 25px rgba(249, 115, 22, 0.5);
+        }
+        
+        .btn-quick {
+            background: transparent;
+            border: 1px solid #f97316;
+            color: #f97316;
+        }
+        
+        .btn-quick:hover {
+            background: rgba(249, 115, 22, 0.1);
+        }
+        
+        .btn-exploit {
+            background: #dc2626;
+            color: #fff;
+        }
+        
+        .btn-exploit:hover {
+            background: #ef4444;
+            box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
+        }
+        
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        
+        .anonymity-bar {
+            display: flex;
+            gap: 20px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .anon-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #6b7280;
+            letter-spacing: 1px;
+        }
+        
+        .anon-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+        
+        .anon-dot.off { background: #404040; }
+        
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 900px) {
+            .content-grid { grid-template-columns: 1fr; }
+        }
+        
+        .panel {
+            background: #141414;
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+        
+        .panel-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(249, 115, 22, 0.15);
+            font-size: 13px;
+            letter-spacing: 3px;
+            color: #f97316;
+            text-transform: uppercase;
+        }
+        
+        .panel-body {
+            padding: 15px 20px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .feed-entry {
+            padding: 6px 0;
+            font-size: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            letter-spacing: 0.5px;
+            line-height: 1.6;
+        }
+        
+        .feed-entry .time {
+            color: #525252;
+            margin-right: 8px;
+        }
+        
+        .feed-entry.success { color: #22c55e; }
+        .feed-entry.warning { color: #f59e0b; }
+        .feed-entry.error { color: #ef4444; }
+        .feed-entry.info { color: #6b7280; }
+        
+        .vuln-card {
+            background: #0f0f0f;
+            border: 1px solid rgba(249, 115, 22, 0.15);
+            padding: 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .vuln-card:hover {
+            border-color: rgba(249, 115, 22, 0.4);
+        }
+        
+        .vuln-card.selected {
+            border-color: #f97316;
+            background: rgba(249, 115, 22, 0.05);
+        }
+        
+        .vuln-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .vuln-type {
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        
+        .severity {
+            font-size: 10px;
+            padding: 3px 10px;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+        
+        .severity.critical { background: rgba(220, 38, 38, 0.2); color: #ef4444; }
+        .severity.high { background: rgba(249, 115, 22, 0.2); color: #f97316; }
+        .severity.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .severity.low { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        
+        .vuln-endpoint {
+            font-size: 11px;
+            color: #6b7280;
+            margin-bottom: 5px;
+        }
+        
+        .vuln-desc {
+            font-size: 11px;
+            color: #a3a3a3;
+            line-height: 1.5;
+        }
+        
+        .vuln-checkbox {
+            width: 18px;
+            height: 18px;
+            accent-color: #f97316;
+            cursor: pointer;
+        }
+        
+        .progress-bar {
+            height: 3px;
+            background: #1a1a1a;
+            margin-top: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #f97316;
+            transition: width 0.5s;
+            box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+        }
+        
+        .summary-bar {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .summary-item {
+            font-size: 12px;
+            letter-spacing: 1px;
+            padding: 8px 15px;
+            background: #0f0f0f;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        
+        .exploit-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .status-badge.running { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .status-badge.completed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .status-badge.failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #404040;
+            font-size: 13px;
+            letter-spacing: 2px;
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        ::-webkit-scrollbar-thumb { background: #1a1a1a; }
+        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-logo">🔺 APEX</div>
+        <div class="header-right">
+            <span style="color:#6b7280;font-size:11px;">Apex@gmail.com</span>
+            <a href="/logout">LOGOUT</a>
+        </div>
+    </div>
+    
+    <div class="main">
+        <!-- Target Input -->
+        <div class="target-section">
+            <div class="target-row">
+                <input type="text" class="target-input" id="targetInput" placeholder="Enter target URL or IP (e.g., https://example.com or 192.168.1.1)">
+                <button class="btn btn-full" id="fullScanBtn" onclick="startScan('full')">🔍 FULL SCAN</button>
+                <button class="btn btn-quick" id="quickScanBtn" onclick="startScan('quick')">⚡ QUICK SCAN</button>
+                <button class="btn btn-exploit" id="exploitBtn" onclick="runExploits()" disabled>💥 EXPLOIT SELECTED</button>
+            </div>
+            <div class="anonymity-bar">
+                <div class="anon-item">
+                    <div class="anon-dot off" id="proxyDot"></div>
+                    Proxy Chain: <span id="proxyStatus">OFF</span>
+                </div>
+                <div class="anon-item">
+                    <div class="anon-dot off" id="torDot"></div>
+                    Tor: <span id="torStatus">OFF</span>
+                </div>
+                <div class="anon-item">
+                    <div class="anon-dot off" id="vpnDot"></div>
+                    VPN: <span id="vpnStatus">OFF</span>
+                </div>
+                <div class="anon-item" style="margin-left:auto;">
+                    <span id="scanStatus"></span>
+                </div>
+            </div>
+            <div class="progress-bar" id="progressBar" style="display:none;">
+                <div class="progress-fill" id="progressFill" style="width:0%"></div>
+            </div>
+        </div>
+        
+        <!-- Content Grid -->
+        <div class="content-grid">
+            <!-- Live Feed -->
+            <div class="panel">
+                <div class="panel-header">📡 LIVE FEED</div>
+                <div class="panel-body" id="liveFeed">
+                    <div class="empty-state">Waiting for target input...</div>
+                </div>
+            </div>
+            
+            <!-- Results -->
+            <div class="panel">
+                <div class="panel-header">🎯 VULNERABILITIES FOUND</div>
+                <div class="panel-body" id="resultsPanel">
+                    <div class="empty-state">Run a scan to see vulnerabilities</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script>
+        const socket = io();
+        let currentScanId = null;
+        let vulnerabilities = [];
+        let selectedVulns = new Set();
+        
+        socket.on('connect', () => {
+            console.log('Connected to APEX');
+        });
+        
+        socket.on('feed_update', (entry) => {
+            addFeedEntry(entry);
+        });
+        
+        socket.on('feed_history', (history) => {
+            history.forEach(entry => addFeedEntry(entry));
+        });
+        
+        socket.on('progress_update', (data) => {
+            if (data.scan_id === currentScanId) {
+                document.getElementById('progressBar').style.display = 'block';
+                document.getElementById('progressFill').style.width = data.progress + '%';
+            }
+        });
+        
+        socket.on('scan_complete', (data) => {
+            vulnerabilities = data.vulnerabilities;
+            selectedVulns.clear();
+            renderVulnerabilities(data.vulnerabilities, data.summary);
+            document.getElementById('fullScanBtn').disabled = false;
+            document.getElementById('quickScanBtn').disabled = false;
+            document.getElementById('exploitBtn').disabled = true;
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">COMPLETED</span>';
+        });
+        
+        socket.on('exploit_complete', (data) => {
+            document.getElementById('exploitBtn').disabled = false;
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">EXPLOITS DONE</span>';
+        });
+        
+        function addFeedEntry(entry) {
+            const feed = document.getElementById('liveFeed');
+            if (feed.querySelector('.empty-state')) {
+                feed.innerHTML = '';
+            }
+            
+            const div = document.createElement('div');
+            div.className = `feed-entry ${entry.level}`;
+            div.innerHTML = `<span class="time">[${entry.timestamp}]</span>${entry.message}`;
+            feed.appendChild(div);
+            feed.scrollTop = feed.scrollHeight;
+        }
+        
+        function startScan(type) {
+            const target = document.getElementById('targetInput').value.trim();
+            if (!target) {
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Please enter a target URL or IP', level: 'error'});
+                return;
+            }
+            
+            document.getElementById('fullScanBtn').disabled = true;
+            document.getElementById('quickScanBtn').disabled = true;
+            document.getElementById('exploitBtn').disabled = true;
+            document.getElementById('progressBar').style.display = 'block';
+            document.getElementById('progressFill').style.width = '0%';
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge running">SCANNING...</span>';
+            document.getElementById('resultsPanel').innerHTML = '<div class="empty-state">Scanning...</div>';
+            document.getElementById('liveFeed').innerHTML = '';
+            vulnerabilities = [];
+            selectedVulns.clear();
+            
+            fetch('/api/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({target: target, scan_type: type, modules: []})
+            })
+            .then(r => r.json())
+            .then(data => {
+                currentScanId = data.scan_id;
+            })
+            .catch(err => {
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Failed to start scan: ' + err.message, level: 'error'});
+                document.getElementById('fullScanBtn').disabled = false;
+                document.getElementById('quickScanBtn').disabled = false;
+            });
+        }
+        
+        function renderVulnerabilities(vulns, summary) {
+            const panel = document.getElementById('resultsPanel');
+            
+            if (!vulns || vulns.length === 0) {
+                panel.innerHTML = '<div class="empty-state">✅ No vulnerabilities found — target appears secure</div>';
+                return;
+            }
+            
+            let html = '';
+            
+            // Summary
+            html += '<div class="summary-bar">';
+            if (summary.critical > 0) html += `<div class="summary-item">🔴 Critical: ${summary.critical}</div>`;
+            if (summary.high > 0) html += `<div class="summary-item">🟠 High: ${summary.high}</div>`;
+            if (summary.medium > 0) html += `<div class="summary-item">🟡 Medium: ${summary.medium}</div>`;
+            if (summary.low > 0) html += `<div class="summary-item">🟢 Low: ${summary.low}</div>`;
+            html += '</div>';
+            
+            // Sort by severity
+            const severityOrder = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3};
+            vulns.sort((a, b) => (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4));
+            
+            vulns.forEach((vuln, index) => {
+                const severityClass = vuln.severity || 'low';
+                const typeLabel = vuln.type ? vuln.type.toUpperCase() : 'UNKNOWN';
+                const isSelected = selectedVulns.has(index);
+                
+                html += `
+                    <div class="vuln-card ${isSelected ? 'selected' : ''}" onclick="toggleVuln(${index}, this)">
+                        <div class="vuln-header">
+                            <span class="vuln-type">
+                                <input type="checkbox" class="vuln-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleVuln(${index}, this.parentElement.parentElement)">
+                                ${typeLabel}
+                            </span>
+                            <span class="severity ${severityClass}">${vuln.severity.toUpperCase()}</span>
+                        </div>
+                        <div class="vuln-endpoint">📍 ${vuln.endpoint || 'N/A'}</div>
+                        <div class="vuln-desc">${vuln.description || 'No description available'}</div>
+                        ${vuln.parameter ? `<div class="vuln-desc" style="color:#f97316;">→ Parameter: ${vuln.parameter}</div>` : ''}
+                        ${vuln.payload ? `<div class="vuln-desc" style="color:#525252;">→ Payload: ${vuln.payload}</div>` : ''}
+                    </div>
+                `;
+            });
+            
+            // Exploit actions
+            html += `
+                <div class="exploit-actions">
+                    <button class="btn btn-exploit" id="exploitSelectedBtn" onclick="runExploits()" disabled>💥 EXPLOIT SELECTED (0)</button>
+                    <button class="btn btn-quick" onclick="selectAll()">📋 SELECT ALL</button>
+                    <button class="btn btn-quick" onclick="clearAll()">🗑️ CLEAR</button>
+                </div>
+            `;
+            
+            panel.innerHTML = html;
+            updateExploitButton();
+        }
+        
+        function toggleVuln(index, card) {
+            if (selectedVulns.has(index)) {
+                selectedVulns.delete(index);
+                card.classList.remove('selected');
+                card.querySelector('.vuln-checkbox').checked = false;
+            } else {
+                selectedVulns.add(index);
+                card.classList.add('selected');
+                card.querySelector('.vuln-checkbox').checked = true;
+            }
+            updateExploitButton();
+        }
+        
+        function selectAll() {
+            vulnerabilities.forEach((vuln, index) => {
+                selectedVulns.add(index);
+            });
+            renderVulnerabilities(vulnerabilities, getSummary());
+        }
+        
+        function clearAll() {
+            selectedVulns.clear();
+            renderVulnerabilities(vulnerabilities, getSummary());
+        }
+        
+        function getSummary() {
+            const summary = {critical: 0, high: 0, medium: 0, low: 0};
+            vulnerabilities.forEach(v => {
+                if (summary[v.severity] !== undefined) summary[v.severity]++;
+            });
+            return summary;
+        }
+        
+        function updateExploitButton() {
+            const btn = document.getElementById('exploitSelectedBtn');
+            const mainBtn = document.getElementById('exploitBtn');
+            if (btn) {
+                btn.innerHTML = `💥 EXPLOIT SELECTED (${selectedVulns.size})`;
+                btn.disabled = selectedVulns.size === 0;
+            }
+            if (mainBtn) {
+                mainBtn.innerHTML = `💥 EXPLOIT SELECTED (${selectedVulns.size})`;
+                mainBtn.disabled = selectedVulns.size === 0;
+            }
+        }
+        
+        function runExploits() {
+            if (selectedVulns.size === 0) {
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ No vulnerabilities selected for exploitation', level: 'error'});
+                return;
+            }
+            
+            const selectedVulnData = Array.from(selectedVulns).map(i => vulnerabilities[i]);
+            
+            document.getElementById('exploitBtn').disabled = true;
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge running">EXPLOITING...</span>';
+            
+            fetch('/api/exploit', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    scan_id: currentScanId,
+                    vulnerabilities: selectedVulnData
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('Exploit started:', data);
+            })
+            .catch(err => {
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Failed to start exploit: ' + err.message, level: 'error'});
+                document.getElementById('exploitBtn').disabled = false;
+            });
+        }
+        
+        // Request feed history on load
+        socket.emit('request_feed');
+    </script>
+</body>
+</html>
