@@ -8,173 +8,152 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
-            background: #0a0a0a;
-            color: #e5e5e5;
+            background: #000;
+            color: #ccc;
             font-family: 'Courier New', monospace;
             min-height: 100vh;
         }
         
-        body::before {
+        body::after {
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(rgba(249, 115, 22, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(249, 115, 22, 0.02) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.05) 2px, rgba(0,0,0,0.05) 4px);
             pointer-events: none;
-            z-index: 0;
+            z-index: 999;
         }
         
         .header {
             position: relative;
             z-index: 1;
-            background: #0f0f0f;
-            border-bottom: 1px solid rgba(249, 115, 22, 0.3);
-            padding: 15px 30px;
+            background: #050505;
+            border-bottom: 1px solid #1a1a1a;
+            padding: 12px 25px;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
         
         .header-logo {
-            font-size: 24px;
+            font-size: 20px;
             font-weight: 900;
-            color: #f97316;
+            color: #ff0000;
             letter-spacing: 8px;
-            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
+            text-shadow: 0 0 20px rgba(255,0,0,0.3);
         }
         
         .header-right {
             display: flex;
             align-items: center;
             gap: 20px;
+            font-size: 11px;
         }
         
         .header-right a {
-            color: #6b7280;
+            color: #555;
             text-decoration: none;
-            font-size: 12px;
             letter-spacing: 2px;
             transition: color 0.3s;
         }
         
-        .header-right a:hover { color: #f97316; }
+        .header-right a:hover { color: #ff0000; }
         
         .main {
             position: relative;
             z-index: 1;
-            padding: 20px 30px;
-            max-width: 1400px;
+            padding: 20px 25px;
+            max-width: 1500px;
             margin: 0 auto;
         }
         
         .target-section {
-            background: #141414;
-            border: 1px solid rgba(249, 115, 22, 0.2);
-            padding: 25px;
+            background: #050505;
+            border: 1px solid #1a1a1a;
+            padding: 20px;
             margin-bottom: 20px;
         }
         
         .target-row {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             align-items: center;
             flex-wrap: wrap;
         }
         
         .target-input {
             flex: 1;
-            min-width: 300px;
-            padding: 14px 18px;
-            background: #0a0a0a;
-            border: 1px solid rgba(249, 115, 22, 0.3);
-            color: #e5e5e5;
-            font-family: 'Courier New', monospace;
-            font-size: 15px;
-            letter-spacing: 1px;
-            outline: none;
-            transition: border-color 0.3s;
-        }
-        
-        .target-input:focus {
-            border-color: #f97316;
-            box-shadow: 0 0 15px rgba(249, 115, 22, 0.2);
-        }
-        
-        .target-input::placeholder { color: #404040; }
-        
-        .btn {
-            padding: 14px 28px;
-            border: none;
+            min-width: 280px;
+            padding: 12px 16px;
+            background: #000;
+            border: 1px solid #1a1a1a;
+            color: #fff;
             font-family: 'Courier New', monospace;
             font-size: 14px;
+            letter-spacing: 1px;
+            outline: none;
+        }
+        
+        .target-input:focus { border-color: #ff0000; }
+        .target-input::placeholder { color: #333; }
+        
+        .btn {
+            padding: 12px 22px;
+            border: 1px solid #333;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
             font-weight: bold;
             letter-spacing: 2px;
             cursor: pointer;
             transition: all 0.3s;
             text-transform: uppercase;
-        }
-        
-        .btn-full {
-            background: #f97316;
-            color: #0a0a0a;
-        }
-        
-        .btn-full:hover {
-            background: #fb923c;
-            box-shadow: 0 0 25px rgba(249, 115, 22, 0.5);
-        }
-        
-        .btn-quick {
             background: transparent;
-            border: 1px solid #f97316;
-            color: #f97316;
+            color: #ccc;
         }
         
-        .btn-quick:hover {
-            background: rgba(249, 115, 22, 0.1);
-        }
+        .btn:hover { border-color: #ff0000; color: #ff0000; }
+        .btn:disabled { opacity: 0.3; cursor: not-allowed; }
         
-        .btn-exploit {
-            background: #dc2626;
-            color: #fff;
-        }
+        .btn-full { background: rgba(255,0,0,0.1); border-color: #ff0000; color: #ff0000; }
+        .btn-full:hover { background: rgba(255,0,0,0.2); box-shadow: 0 0 20px rgba(255,0,0,0.2); }
         
-        .btn-exploit:hover {
-            background: #ef4444;
-            box-shadow: 0 0 25px rgba(220, 38, 38, 0.5);
-        }
+        .btn-exploit { background: rgba(255,0,0,0.15); border-color: #ff0000; color: #ff0000; }
+        .btn-exploit:hover { background: rgba(255,0,0,0.3); }
         
-        .btn:disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-        }
+        .btn-tool { border-color: #333; color: #666; font-size: 10px; padding: 8px 14px; }
+        .btn-tool:hover { border-color: #ff0000; color: #ff0000; }
         
         .anonymity-bar {
             display: flex;
-            gap: 20px;
+            gap: 15px;
             margin-top: 15px;
             flex-wrap: wrap;
+            align-items: center;
         }
         
-        .anon-item {
+        .anon-toggle {
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 12px;
-            color: #6b7280;
+            font-size: 11px;
+            color: #555;
             letter-spacing: 1px;
+            cursor: pointer;
+            padding: 6px 12px;
+            border: 1px solid #1a1a1a;
+            background: #000;
+            transition: all 0.3s;
         }
+        
+        .anon-toggle:hover { border-color: #333; }
+        .anon-toggle.active { border-color: #ff0000; color: #ff0000; }
         
         .anon-dot {
-            width: 8px;
-            height: 8px;
+            width: 6px; height: 6px;
             border-radius: 50%;
-            background: #22c55e;
+            background: #333;
         }
         
-        .anon-dot.off { background: #404040; }
+        .anon-toggle.active .anon-dot { background: #ff0000; box-shadow: 0 0 8px #ff0000; }
         
         .content-grid {
             display: grid;
@@ -182,176 +161,144 @@
             gap: 20px;
         }
         
-        @media (max-width: 900px) {
-            .content-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 900px) { .content-grid { grid-template-columns: 1fr; } }
         
         .panel {
-            background: #141414;
-            border: 1px solid rgba(249, 115, 22, 0.2);
+            background: #050505;
+            border: 1px solid #1a1a1a;
         }
         
         .panel-header {
-            padding: 15px 20px;
-            border-bottom: 1px solid rgba(249, 115, 22, 0.15);
-            font-size: 13px;
+            padding: 12px 18px;
+            border-bottom: 1px solid #1a1a1a;
+            font-size: 11px;
             letter-spacing: 3px;
-            color: #f97316;
+            color: #ff0000;
             text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
         .panel-body {
-            padding: 15px 20px;
+            padding: 15px 18px;
             max-height: 500px;
             overflow-y: auto;
         }
         
         .feed-entry {
-            padding: 6px 0;
-            font-size: 12px;
-            border-bottom: 1px solid rgba(255,255,255,0.03);
-            letter-spacing: 0.5px;
-            line-height: 1.6;
+            padding: 5px 0;
+            font-size: 11px;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            line-height: 1.5;
         }
         
-        .feed-entry .time {
-            color: #525252;
-            margin-right: 8px;
-        }
-        
-        .feed-entry.success { color: #22c55e; }
-        .feed-entry.warning { color: #f59e0b; }
-        .feed-entry.error { color: #ef4444; }
-        .feed-entry.info { color: #6b7280; }
+        .feed-entry .time { color: #333; margin-right: 8px; }
+        .feed-entry.success { color: #00ff00; }
+        .feed-entry.warning { color: #ff0000; }
+        .feed-entry.error { color: #ff4444; }
+        .feed-entry.info { color: #555; }
         
         .vuln-card {
-            background: #0f0f0f;
-            border: 1px solid rgba(249, 115, 22, 0.15);
-            padding: 15px;
-            margin-bottom: 10px;
+            background: #000;
+            border: 1px solid #1a1a1a;
+            padding: 12px;
+            margin-bottom: 8px;
             cursor: pointer;
             transition: all 0.3s;
         }
         
-        .vuln-card:hover {
-            border-color: rgba(249, 115, 22, 0.4);
-        }
-        
-        .vuln-card.selected {
-            border-color: #f97316;
-            background: rgba(249, 115, 22, 0.05);
-        }
+        .vuln-card:hover { border-color: #333; }
+        .vuln-card.selected { border-color: #ff0000; background: rgba(255,0,0,0.03); }
         
         .vuln-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         
-        .vuln-type {
-            font-size: 13px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
+        .vuln-type { font-size: 12px; font-weight: bold; letter-spacing: 1px; }
         
         .severity {
-            font-size: 10px;
-            padding: 3px 10px;
+            font-size: 9px;
+            padding: 2px 8px;
             letter-spacing: 1px;
             font-weight: bold;
         }
         
-        .severity.critical { background: rgba(220, 38, 38, 0.2); color: #ef4444; }
-        .severity.high { background: rgba(249, 115, 22, 0.2); color: #f97316; }
-        .severity.medium { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .severity.low { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .severity.critical { background: rgba(255,0,0,0.15); color: #ff0000; border: 1px solid rgba(255,0,0,0.3); }
+        .severity.high { background: rgba(255,100,0,0.15); color: #ff6400; border: 1px solid rgba(255,100,0,0.3); }
+        .severity.medium { background: rgba(255,200,0,0.15); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
+        .severity.low { background: rgba(0,255,0,0.1); color: #00ff00; border: 1px solid rgba(0,255,0,0.2); }
         
-        .vuln-endpoint {
-            font-size: 11px;
-            color: #6b7280;
-            margin-bottom: 5px;
-        }
+        .vuln-endpoint { font-size: 10px; color: #555; margin-bottom: 4px; }
+        .vuln-desc { font-size: 10px; color: #777; line-height: 1.4; }
         
-        .vuln-desc {
-            font-size: 11px;
-            color: #a3a3a3;
-            line-height: 1.5;
-        }
-        
-        .vuln-checkbox {
-            width: 18px;
-            height: 18px;
-            accent-color: #f97316;
-            cursor: pointer;
-        }
+        .vuln-checkbox { accent-color: #ff0000; cursor: pointer; margin-right: 8px; }
         
         .progress-bar {
-            height: 3px;
+            height: 2px;
             background: #1a1a1a;
             margin-top: 10px;
         }
         
         .progress-fill {
             height: 100%;
-            background: #f97316;
+            background: #ff0000;
             transition: width 0.5s;
-            box-shadow: 0 0 10px rgba(249, 115, 22, 0.5);
+            box-shadow: 0 0 10px rgba(255,0,0,0.5);
         }
         
-        .summary-bar {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            flex-wrap: wrap;
-        }
+        .summary-bar { display: flex; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
         
         .summary-item {
-            font-size: 12px;
+            font-size: 10px;
             letter-spacing: 1px;
-            padding: 8px 15px;
-            background: #0f0f0f;
-            border: 1px solid rgba(255,255,255,0.05);
+            padding: 6px 12px;
+            background: #000;
+            border: 1px solid #1a1a1a;
         }
         
-        .exploit-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-            flex-wrap: wrap;
-        }
+        .exploit-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         
         .status-badge {
             display: inline-block;
-            padding: 4px 12px;
-            font-size: 10px;
+            padding: 3px 10px;
+            font-size: 9px;
             letter-spacing: 2px;
         }
         
-        .status-badge.running { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .status-badge.completed { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
-        .status-badge.failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; }
+        .status-badge.running { background: rgba(255,200,0,0.1); color: #ffc800; border: 1px solid rgba(255,200,0,0.3); }
+        .status-badge.completed { background: rgba(0,255,0,0.1); color: #00ff00; border: 1px solid rgba(0,255,0,0.2); }
+        .status-badge.failed { background: rgba(255,0,0,0.1); color: #ff0000; border: 1px solid rgba(255,0,0,0.3); }
         
         .empty-state {
             text-align: center;
             padding: 40px;
-            color: #404040;
-            font-size: 13px;
+            color: #333;
+            font-size: 12px;
             letter-spacing: 2px;
         }
         
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; }
-        ::-webkit-scrollbar-track { background: #0a0a0a; }
+        .tool-links {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: #000; }
         ::-webkit-scrollbar-thumb { background: #1a1a1a; }
-        ::-webkit-scrollbar-thumb:hover { background: #f97316; }
+        ::-webkit-scrollbar-thumb:hover { background: #ff0000; }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="header-logo">🔺 APEX</div>
+        <div class="header-logo">APEX</div>
         <div class="header-right">
-            <span style="color:#6b7280;font-size:11px;">Apex@gmail.com</span>
+            <span style="color:#444;">Apex@gmail.com</span>
+            <a href="/ransomware/preview">RANSOMWARE EDITOR</a>
             <a href="/logout">LOGOUT</a>
         </div>
     </div>
@@ -360,28 +307,28 @@
         <!-- Target Input -->
         <div class="target-section">
             <div class="target-row">
-                <input type="text" class="target-input" id="targetInput" placeholder="Enter target URL or IP (e.g., https://example.com or 192.168.1.1)">
-                <button class="btn btn-full" id="fullScanBtn" onclick="startScan('full')">🔍 FULL SCAN</button>
-                <button class="btn btn-quick" id="quickScanBtn" onclick="startScan('quick')">⚡ QUICK SCAN</button>
-                <button class="btn btn-exploit" id="exploitBtn" onclick="runExploits()" disabled>💥 EXPLOIT SELECTED</button>
+                <input type="text" class="target-input" id="targetInput" placeholder="Enter target URL (e.g., https://example.com)">
+                <button class="btn btn-full" id="fullScanBtn" onclick="startScan('full')">FULL SCAN</button>
+                <button class="btn" id="quickScanBtn" onclick="startScan('quick')">QUICK</button>
+                <button class="btn btn-exploit" id="exploitBtn" onclick="runExploits()" disabled>EXPLOIT (0)</button>
             </div>
+            
             <div class="anonymity-bar">
-                <div class="anon-item">
-                    <div class="anon-dot off" id="proxyDot"></div>
-                    Proxy Chain: <span id="proxyStatus">OFF</span>
+                <div class="anon-toggle" id="proxyToggle" onclick="toggleAnon('proxy')">
+                    <div class="anon-dot"></div>
+                    PROXY CHAIN
                 </div>
-                <div class="anon-item">
-                    <div class="anon-dot off" id="torDot"></div>
-                    Tor: <span id="torStatus">OFF</span>
+                <div class="anon-toggle" id="torToggle" onclick="toggleAnon('tor')">
+                    <div class="anon-dot"></div>
+                    TOR
                 </div>
-                <div class="anon-item">
-                    <div class="anon-dot off" id="vpnDot"></div>
-                    VPN: <span id="vpnStatus">OFF</span>
+                <div class="anon-toggle" id="vpnToggle" onclick="toggleAnon('vpn')">
+                    <div class="anon-dot"></div>
+                    VPN
                 </div>
-                <div class="anon-item" style="margin-left:auto;">
-                    <span id="scanStatus"></span>
-                </div>
+                <span style="margin-left:auto;" id="scanStatus"></span>
             </div>
+            
             <div class="progress-bar" id="progressBar" style="display:none;">
                 <div class="progress-fill" id="progressFill" style="width:0%"></div>
             </div>
@@ -391,17 +338,22 @@
         <div class="content-grid">
             <!-- Live Feed -->
             <div class="panel">
-                <div class="panel-header">📡 LIVE FEED</div>
+                <div class="panel-header">LIVE FEED <span style="font-size:9px;color:#333;">WEBSOCKET</span></div>
                 <div class="panel-body" id="liveFeed">
-                    <div class="empty-state">Waiting for target input...</div>
+                    <div class="empty-state">AWAITING TARGET...</div>
                 </div>
             </div>
             
             <!-- Results -->
             <div class="panel">
-                <div class="panel-header">🎯 VULNERABILITIES FOUND</div>
+                <div class="panel-header">
+                    VULNERABILITIES
+                    <div class="tool-links">
+                        <button class="btn btn-tool" onclick="window.open('/ransomware/preview')">RANSOMWARE EDITOR</button>
+                    </div>
+                </div>
                 <div class="panel-body" id="resultsPanel">
-                    <div class="empty-state">Run a scan to see vulnerabilities</div>
+                    <div class="empty-state">ENTER TARGET AND RUN SCAN</div>
                 </div>
             </div>
         </div>
@@ -413,18 +365,12 @@
         let currentScanId = null;
         let vulnerabilities = [];
         let selectedVulns = new Set();
+        let proxyEnabled = false, torEnabled = false, vpnEnabled = false;
         
-        socket.on('connect', () => {
-            console.log('Connected to APEX');
-        });
+        socket.on('connect', () => console.log('Connected'));
         
-        socket.on('feed_update', (entry) => {
-            addFeedEntry(entry);
-        });
-        
-        socket.on('feed_history', (history) => {
-            history.forEach(entry => addFeedEntry(entry));
-        });
+        socket.on('feed_update', (entry) => addFeedEntry(entry));
+        socket.on('feed_history', (history) => history.forEach(e => addFeedEntry(e)));
         
         socket.on('progress_update', (data) => {
             if (data.scan_id === currentScanId) {
@@ -440,20 +386,17 @@
             document.getElementById('fullScanBtn').disabled = false;
             document.getElementById('quickScanBtn').disabled = false;
             document.getElementById('exploitBtn').disabled = true;
-            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">COMPLETED</span>';
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">COMPLETE</span>';
         });
         
         socket.on('exploit_complete', (data) => {
             document.getElementById('exploitBtn').disabled = false;
-            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">EXPLOITS DONE</span>';
+            document.getElementById('scanStatus').innerHTML = '<span class="status-badge completed">DONE</span>';
         });
         
         function addFeedEntry(entry) {
             const feed = document.getElementById('liveFeed');
-            if (feed.querySelector('.empty-state')) {
-                feed.innerHTML = '';
-            }
-            
+            if (feed.querySelector('.empty-state')) feed.innerHTML = '';
             const div = document.createElement('div');
             div.className = `feed-entry ${entry.level}`;
             div.innerHTML = `<span class="time">[${entry.timestamp}]</span>${entry.message}`;
@@ -461,10 +404,30 @@
             feed.scrollTop = feed.scrollHeight;
         }
         
+        function toggleAnon(type) {
+            const toggles = { proxy: 'proxyToggle', tor: 'torToggle', vpn: 'vpnToggle' };
+            const states = { proxy: proxyEnabled, tor: torEnabled, vpn: vpnEnabled };
+            const newState = !states[type];
+            
+            if (type === 'proxy') proxyEnabled = newState;
+            if (type === 'tor') torEnabled = newState;
+            if (type === 'vpn') vpnEnabled = newState;
+            
+            const el = document.getElementById(toggles[type]);
+            if (newState) el.classList.add('active');
+            else el.classList.remove('active');
+            
+            fetch(`/api/${type}/toggle`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({enabled: newState})
+            });
+        }
+        
         function startScan(type) {
             const target = document.getElementById('targetInput').value.trim();
             if (!target) {
-                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Please enter a target URL or IP', level: 'error'});
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: 'Enter a target URL', level: 'error'});
                 return;
             }
             
@@ -474,7 +437,7 @@
             document.getElementById('progressBar').style.display = 'block';
             document.getElementById('progressFill').style.width = '0%';
             document.getElementById('scanStatus').innerHTML = '<span class="status-badge running">SCANNING...</span>';
-            document.getElementById('resultsPanel').innerHTML = '<div class="empty-state">Scanning...</div>';
+            document.getElementById('resultsPanel').innerHTML = '<div class="empty-state">SCANNING...</div>';
             document.getElementById('liveFeed').innerHTML = '';
             vulnerabilities = [];
             selectedVulns.clear();
@@ -482,14 +445,12 @@
             fetch('/api/scan', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({target: target, scan_type: type, modules: []})
+                body: JSON.stringify({target: target, scan_type: type})
             })
             .then(r => r.json())
-            .then(data => {
-                currentScanId = data.scan_id;
-            })
+            .then(data => { currentScanId = data.scan_id; })
             .catch(err => {
-                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Failed to start scan: ' + err.message, level: 'error'});
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: 'Failed to start scan', level: 'error'});
                 document.getElementById('fullScanBtn').disabled = false;
                 document.getElementById('quickScanBtn').disabled = false;
             });
@@ -497,29 +458,24 @@
         
         function renderVulnerabilities(vulns, summary) {
             const panel = document.getElementById('resultsPanel');
-            
             if (!vulns || vulns.length === 0) {
-                panel.innerHTML = '<div class="empty-state">✅ No vulnerabilities found — target appears secure</div>';
+                panel.innerHTML = '<div class="empty-state">NO VULNERABILITIES FOUND</div>';
                 return;
             }
             
-            let html = '';
-            
-            // Summary
-            html += '<div class="summary-bar">';
-            if (summary.critical > 0) html += `<div class="summary-item">🔴 Critical: ${summary.critical}</div>`;
-            if (summary.high > 0) html += `<div class="summary-item">🟠 High: ${summary.high}</div>`;
-            if (summary.medium > 0) html += `<div class="summary-item">🟡 Medium: ${summary.medium}</div>`;
-            if (summary.low > 0) html += `<div class="summary-item">🟢 Low: ${summary.low}</div>`;
+            let html = '<div class="summary-bar">';
+            if (summary.critical > 0) html += `<div class="summary-item">🔴 CRITICAL: ${summary.critical}</div>`;
+            if (summary.high > 0) html += `<div class="summary-item">🟠 HIGH: ${summary.high}</div>`;
+            if (summary.medium > 0) html += `<div class="summary-item">🟡 MEDIUM: ${summary.medium}</div>`;
+            if (summary.low > 0) html += `<div class="summary-item">🟢 LOW: ${summary.low}</div>`;
             html += '</div>';
             
-            // Sort by severity
             const severityOrder = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3};
             vulns.sort((a, b) => (severityOrder[a.severity] || 4) - (severityOrder[b.severity] || 4));
             
             vulns.forEach((vuln, index) => {
-                const severityClass = vuln.severity || 'low';
-                const typeLabel = vuln.type ? vuln.type.toUpperCase() : 'UNKNOWN';
+                const sev = vuln.severity || 'low';
+                const typeLabel = (vuln.type || 'UNKNOWN').toUpperCase();
                 const isSelected = selectedVulns.has(index);
                 
                 html += `
@@ -529,22 +485,21 @@
                                 <input type="checkbox" class="vuln-checkbox" ${isSelected ? 'checked' : ''} onclick="event.stopPropagation(); toggleVuln(${index}, this.parentElement.parentElement)">
                                 ${typeLabel}
                             </span>
-                            <span class="severity ${severityClass}">${vuln.severity.toUpperCase()}</span>
+                            <span class="severity ${sev}">${sev.toUpperCase()}</span>
                         </div>
-                        <div class="vuln-endpoint">📍 ${vuln.endpoint || 'N/A'}</div>
-                        <div class="vuln-desc">${vuln.description || 'No description available'}</div>
-                        ${vuln.parameter ? `<div class="vuln-desc" style="color:#f97316;">→ Parameter: ${vuln.parameter}</div>` : ''}
-                        ${vuln.payload ? `<div class="vuln-desc" style="color:#525252;">→ Payload: ${vuln.payload}</div>` : ''}
+                        <div class="vuln-endpoint">${vuln.endpoint || 'N/A'}</div>
+                        <div class="vuln-desc">${vuln.description || ''}</div>
+                        ${vuln.parameter ? `<div class="vuln-desc" style="color:#ff0000;">→ ${vuln.parameter}</div>` : ''}
+                        ${vuln.payload ? `<div class="vuln-desc" style="color:#333;">→ ${vuln.payload.substring(0,80)}</div>` : ''}
                     </div>
                 `;
             });
             
-            // Exploit actions
             html += `
                 <div class="exploit-actions">
-                    <button class="btn btn-exploit" id="exploitSelectedBtn" onclick="runExploits()" disabled>💥 EXPLOIT SELECTED (0)</button>
-                    <button class="btn btn-quick" onclick="selectAll()">📋 SELECT ALL</button>
-                    <button class="btn btn-quick" onclick="clearAll()">🗑️ CLEAR</button>
+                    <button class="btn btn-exploit" id="exploitSelectedBtn" onclick="runExploits()" disabled>EXPLOIT (0)</button>
+                    <button class="btn" onclick="selectAll()">SELECT ALL</button>
+                    <button class="btn" onclick="clearAll()">CLEAR</button>
                 </div>
             `;
             
@@ -565,69 +520,41 @@
             updateExploitButton();
         }
         
-        function selectAll() {
-            vulnerabilities.forEach((vuln, index) => {
-                selectedVulns.add(index);
-            });
-            renderVulnerabilities(vulnerabilities, getSummary());
-        }
-        
-        function clearAll() {
-            selectedVulns.clear();
-            renderVulnerabilities(vulnerabilities, getSummary());
-        }
+        function selectAll() { vulnerabilities.forEach((_, i) => selectedVulns.add(i)); renderVulnerabilities(vulnerabilities, getSummary()); }
+        function clearAll() { selectedVulns.clear(); renderVulnerabilities(vulnerabilities, getSummary()); }
         
         function getSummary() {
-            const summary = {critical: 0, high: 0, medium: 0, low: 0};
-            vulnerabilities.forEach(v => {
-                if (summary[v.severity] !== undefined) summary[v.severity]++;
-            });
-            return summary;
+            const s = {critical: 0, high: 0, medium: 0, low: 0};
+            vulnerabilities.forEach(v => { if (s[v.severity] !== undefined) s[v.severity]++; });
+            return s;
         }
         
         function updateExploitButton() {
             const btn = document.getElementById('exploitSelectedBtn');
             const mainBtn = document.getElementById('exploitBtn');
-            if (btn) {
-                btn.innerHTML = `💥 EXPLOIT SELECTED (${selectedVulns.size})`;
-                btn.disabled = selectedVulns.size === 0;
-            }
-            if (mainBtn) {
-                mainBtn.innerHTML = `💥 EXPLOIT SELECTED (${selectedVulns.size})`;
-                mainBtn.disabled = selectedVulns.size === 0;
-            }
+            const count = selectedVulns.size;
+            if (btn) { btn.innerHTML = `EXPLOIT (${count})`; btn.disabled = count === 0; }
+            if (mainBtn) { mainBtn.innerHTML = `EXPLOIT (${count})`; mainBtn.disabled = count === 0; }
         }
         
         function runExploits() {
-            if (selectedVulns.size === 0) {
-                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ No vulnerabilities selected for exploitation', level: 'error'});
-                return;
-            }
-            
-            const selectedVulnData = Array.from(selectedVulns).map(i => vulnerabilities[i]);
-            
+            if (selectedVulns.size === 0) return;
+            const selectedData = Array.from(selectedVulns).map(i => vulnerabilities[i]);
             document.getElementById('exploitBtn').disabled = true;
             document.getElementById('scanStatus').innerHTML = '<span class="status-badge running">EXPLOITING...</span>';
             
             fetch('/api/exploit', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    scan_id: currentScanId,
-                    vulnerabilities: selectedVulnData
-                })
+                body: JSON.stringify({scan_id: currentScanId, vulnerabilities: selectedData})
             })
             .then(r => r.json())
-            .then(data => {
-                console.log('Exploit started:', data);
-            })
             .catch(err => {
-                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: '❌ Failed to start exploit: ' + err.message, level: 'error'});
+                addFeedEntry({timestamp: new Date().toTimeString().slice(0,8), message: 'Exploit failed', level: 'error'});
                 document.getElementById('exploitBtn').disabled = false;
             });
         }
         
-        // Request feed history on load
         socket.emit('request_feed');
     </script>
 </body>

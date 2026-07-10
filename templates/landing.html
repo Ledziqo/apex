@@ -3,253 +3,293 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX — Professional Red Team Framework</title>
+    <title>APEX</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
+        @font-face {
+            font-family: 'Glitch';
+            src: local('Courier New');
+        }
+        
         body {
-            background: #0a0a0a;
-            color: #e5e5e5;
+            background: #000;
+            color: #fff;
             font-family: 'Courier New', monospace;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow-x: hidden;
+            overflow: hidden;
+            cursor: crosshair;
         }
         
-        /* Grid background */
+        /* Scanlines */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent 2px,
+                rgba(0,0,0,0.1) 2px,
+                rgba(0,0,0,0.1) 4px
+            );
+            pointer-events: none;
+            z-index: 999;
+        }
+        
+        /* Vignette */
         body::before {
             content: '';
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
-            background-image: 
-                linear-gradient(rgba(249, 115, 22, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(249, 115, 22, 0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
+            background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.8) 100%);
             pointer-events: none;
-            z-index: 0;
+            z-index: 998;
         }
         
-        /* Floating particles */
-        .particles {
+        .noise {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
+            background: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
             pointer-events: none;
-            z-index: 0;
+            z-index: 997;
+            animation: noise 0.5s steps(5) infinite;
         }
         
-        .particle {
-            position: absolute;
-            width: 2px;
-            height: 2px;
-            background: #f97316;
-            border-radius: 50%;
-            animation: float 6s infinite;
-            opacity: 0;
-        }
-        
-        @keyframes float {
-            0% { transform: translateY(100vh) scale(0); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(-100vh) scale(1); opacity: 0; }
+        @keyframes noise {
+            0%, 100% { transform: translate(0,0); }
+            25% { transform: translate(-1px,1px); }
+            50% { transform: translate(1px,-1px); }
+            75% { transform: translate(-1px,-1px); }
         }
         
         .container {
             position: relative;
             z-index: 1;
             text-align: center;
-            padding: 40px 20px;
-            max-width: 700px;
+            padding: 40px;
+            max-width: 600px;
             width: 100%;
         }
         
-        .logo {
-            font-size: 72px;
+        .glitch-text {
+            font-size: 80px;
             font-weight: 900;
-            letter-spacing: 20px;
-            color: #f97316;
-            text-shadow: 0 0 40px rgba(249, 115, 22, 0.5), 0 0 80px rgba(249, 115, 22, 0.3);
-            margin-bottom: 10px;
-            animation: pulse 2s ease-in-out infinite;
+            letter-spacing: 25px;
+            color: #ff0000;
+            text-shadow: 
+                3px 0 #ff0000,
+                -3px 0 #0000ff,
+                0 0 40px rgba(255,0,0,0.5);
+            animation: glitch 3s infinite;
+            position: relative;
         }
         
-        @keyframes pulse {
-            0%, 100% { text-shadow: 0 0 40px rgba(249, 115, 22, 0.5), 0 0 80px rgba(249, 115, 22, 0.3); }
-            50% { text-shadow: 0 0 60px rgba(249, 115, 22, 0.8), 0 0 120px rgba(249, 115, 22, 0.5); }
+        .glitch-text::before,
+        .glitch-text::after {
+            content: 'APEX';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
         }
         
-        .triangle {
-            font-size: 30px;
-            color: #f97316;
-            margin-bottom: 5px;
+        .glitch-text::before {
+            left: 2px;
+            text-shadow: -2px 0 #ff0000;
+            clip: rect(24px, 550px, 90px, 0);
+            animation: glitch-before 3s infinite linear alternate-reverse;
         }
         
-        .tagline {
-            font-size: 18px;
-            color: #f97316;
-            letter-spacing: 8px;
-            text-transform: uppercase;
-            margin-bottom: 5px;
-            font-weight: bold;
+        .glitch-text::after {
+            left: -2px;
+            text-shadow: -2px 0 #0000ff;
+            clip: rect(85px, 550px, 140px, 0);
+            animation: glitch-after 2s infinite linear alternate-reverse;
+        }
+        
+        @keyframes glitch {
+            0%, 100% { transform: none; }
+            92% { transform: none; }
+            93% { transform: skewX(-2deg); }
+            94% { transform: skewX(2deg); }
+            95% { transform: none; }
+        }
+        
+        @keyframes glitch-before {
+            0%, 100% { clip: rect(24px, 550px, 90px, 0); }
+            50% { clip: rect(10px, 550px, 50px, 0); }
+        }
+        
+        @keyframes glitch-after {
+            0%, 100% { clip: rect(85px, 550px, 140px, 0); }
+            50% { clip: rect(60px, 550px, 110px, 0); }
         }
         
         .subtitle {
-            font-size: 14px;
-            color: #fb923c;
-            letter-spacing: 4px;
-            margin-bottom: 30px;
+            font-size: 11px;
+            color: #666;
+            letter-spacing: 8px;
+            margin-top: 10px;
+            text-transform: uppercase;
         }
         
         .divider {
-            width: 200px;
+            width: 100%;
             height: 1px;
-            background: linear-gradient(90deg, transparent, #f97316, transparent);
-            margin: 20px auto;
+            background: linear-gradient(90deg, transparent, #333, transparent);
+            margin: 30px 0;
         }
         
-        .claim {
-            font-size: 22px;
-            color: #fff;
-            font-weight: bold;
-            letter-spacing: 3px;
-            margin-bottom: 30px;
-            text-shadow: 0 0 20px rgba(249, 115, 22, 0.4);
-        }
-        
-        .features {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-bottom: 30px;
-            text-align: left;
-        }
-        
-        .feature {
-            background: rgba(249, 115, 22, 0.05);
-            border: 1px solid rgba(249, 115, 22, 0.2);
-            padding: 12px 15px;
+        .terminal-text {
             font-size: 12px;
-            color: #d4d4d4;
-            letter-spacing: 1px;
-        }
-        
-        .feature::before {
-            content: '▸ ';
-            color: #f97316;
-        }
-        
-        .warning-text {
-            font-size: 13px;
-            color: #fb923c;
-            margin-bottom: 20px;
+            color: #00ff00;
             letter-spacing: 2px;
+            margin: 15px 0;
+            opacity: 0.8;
+        }
+        
+        .terminal-text .cursor {
+            animation: blink 1s infinite;
+            color: #00ff00;
+        }
+        
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
         }
         
         .login-box {
-            background: #1a1a1a;
-            border: 1px solid rgba(249, 115, 22, 0.3);
+            background: rgba(10,10,10,0.9);
+            border: 1px solid #1a1a1a;
             padding: 30px;
-            max-width: 400px;
+            max-width: 380px;
             margin: 0 auto;
-            box-shadow: 0 0 30px rgba(249, 115, 22, 0.1);
         }
         
         .login-box input {
             width: 100%;
             padding: 12px 15px;
-            margin-bottom: 15px;
-            background: #0a0a0a;
-            border: 1px solid rgba(249, 115, 22, 0.3);
-            color: #e5e5e5;
+            margin-bottom: 12px;
+            background: #000;
+            border: 1px solid #1a1a1a;
+            color: #fff;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
-            letter-spacing: 1px;
+            font-size: 13px;
+            letter-spacing: 2px;
             outline: none;
             transition: border-color 0.3s;
         }
         
         .login-box input:focus {
-            border-color: #f97316;
-            box-shadow: 0 0 10px rgba(249, 115, 22, 0.2);
+            border-color: #ff0000;
         }
         
         .login-box input::placeholder {
-            color: #525252;
+            color: #333;
         }
         
         .login-btn {
             width: 100%;
             padding: 14px;
-            background: #f97316;
-            border: none;
-            color: #0a0a0a;
+            background: transparent;
+            border: 1px solid #ff0000;
+            color: #ff0000;
             font-family: 'Courier New', monospace;
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 4px;
+            font-size: 14px;
+            letter-spacing: 5px;
             cursor: pointer;
             transition: all 0.3s;
             text-transform: uppercase;
         }
         
         .login-btn:hover {
-            background: #fb923c;
-            box-shadow: 0 0 30px rgba(249, 115, 22, 0.5);
+            background: rgba(255,0,0,0.1);
+            box-shadow: 0 0 30px rgba(255,0,0,0.2);
         }
         
-        .restricted {
-            font-size: 11px;
-            color: #f97316;
+        .warning {
+            font-size: 10px;
+            color: #ff0000;
+            letter-spacing: 3px;
             margin-top: 20px;
-            letter-spacing: 2px;
+            opacity: 0.6;
         }
         
         .flash-error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid rgba(239, 68, 68, 0.3);
-            color: #ef4444;
+            background: rgba(255,0,0,0.1);
+            border: 1px solid rgba(255,0,0,0.3);
+            color: #ff0000;
             padding: 10px;
             margin-bottom: 15px;
-            font-size: 12px;
-            letter-spacing: 1px;
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 20px 0;
+            font-size: 10px;
+            color: #444;
+            letter-spacing: 3px;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat .num {
+            font-size: 24px;
+            color: #ff0000;
+            display: block;
         }
         
         @media (max-width: 600px) {
-            .logo { font-size: 40px; letter-spacing: 10px; }
-            .features { grid-template-columns: 1fr; }
-            .tagline { font-size: 14px; letter-spacing: 4px; }
+            .glitch-text { font-size: 40px; letter-spacing: 12px; }
+            .stats { gap: 15px; }
         }
     </style>
 </head>
 <body>
-    <div class="particles" id="particles"></div>
+    <div class="noise"></div>
     
     <div class="container">
-        <div class="triangle">🔺</div>
-        <div class="logo">APEX</div>
-        <div class="tagline">The Most Dangerous Hacking Tool</div>
-        <div class="subtitle">Ever Created</div>
+        <div class="glitch-text">APEX</div>
+        <div class="subtitle">// no escape // no backup // no mercy</div>
         
         <div class="divider"></div>
         
-        <div class="claim">100% SUCCESS RATE. ANY WEBSITE. ANY TARGET.</div>
-        
-        <div class="features">
-            <div class="feature">100+ Attack Modules</div>
-            <div class="feature">AI-Powered Detection</div>
-            <div class="feature">200+ CVE Auto-Exploits</div>
-            <div class="feature">Full C2 Framework</div>
-            <div class="feature">Windows Domain Domination</div>
-            <div class="feature">Cloud Infrastructure Takeover</div>
-            <div class="feature">3-Layer Anonymity</div>
-            <div class="feature">Untraceable Operations</div>
+        <div class="terminal-text">
+            > initializing<span class="cursor">_</span>
+        </div>
+        <div class="terminal-text" style="color:#666;">
+            > target acquired
+        </div>
+        <div class="terminal-text" style="color:#444;">
+            > waiting for operator
         </div>
         
-        <div class="warning-text">
-            No website is safe. No firewall can stop it.<br>
-            No WAF can detect it. No security can defend it.
+        <div class="divider"></div>
+        
+        <div class="stats">
+            <div class="stat">
+                <span class="num" id="count1">0</span>
+                TARGETS
+            </div>
+            <div class="stat">
+                <span class="num" id="count2">0</span>
+                BREACHES
+            </div>
+            <div class="stat">
+                <span class="num">100%</span>
+                SUCCESS
+            </div>
         </div>
         
         <div class="divider"></div>
@@ -264,26 +304,43 @@
             {% endwith %}
             
             <form method="POST" action="/login">
-                <input type="email" name="email" placeholder="EMAIL" required>
-                <input type="password" name="password" placeholder="PASSWORD" required>
-                <button type="submit" class="login-btn">ACCESS APEX</button>
+                <input type="text" name="email" placeholder="IDENTIFIER" required autocomplete="off">
+                <input type="password" name="password" placeholder="ACCESS KEY" required>
+                <button type="submit" class="login-btn">ACCESS</button>
             </form>
         </div>
         
-        <div class="restricted">⚠ RESTRICTED ACCESS — AUTHORIZED PERSONNEL ONLY</div>
+        <div class="warning">⚠ UNAUTHORIZED ACCESS WILL BE LOGGED AND TRACED</div>
     </div>
     
     <script>
-        // Create floating particles
-        const particlesContainer = document.getElementById('particles');
-        for (let i = 0; i < 50; i++) {
-            const particle = document.createElement('div');
-            particle.className = 'particle';
-            particle.style.left = Math.random() * 100 + '%';
-            particle.style.animationDelay = Math.random() * 6 + 's';
-            particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
-            particlesContainer.appendChild(particle);
+        // Animate counter
+        function animateCounter(id, target) {
+            let current = 0;
+            const el = document.getElementById(id);
+            const interval = setInterval(() => {
+                current += Math.ceil(target / 50);
+                if (current >= target) {
+                    current = target;
+                    clearInterval(interval);
+                }
+                el.textContent = current.toLocaleString();
+            }, 40);
         }
+        
+        animateCounter('count1', 12847);
+        animateCounter('count2', 9631);
+        
+        // Terminal text animation
+        const lines = document.querySelectorAll('.terminal-text');
+        lines.forEach((line, i) => {
+            line.style.opacity = '0';
+            setTimeout(() => {
+                line.style.transition = 'opacity 1s';
+                line.style.opacity = line.style.color === '#00ff00' ? '0.8' : 
+                                      line.style.color === '#666' ? '0.6' : '0.4';
+            }, 1000 + i * 800);
+        });
     </script>
 </body>
 </html>
