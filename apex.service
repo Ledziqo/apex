@@ -7,7 +7,7 @@ Type=simple
 User=root
 WorkingDirectory=/opt/apex
 Environment="PATH=/opt/apex/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
-ExecStart=/opt/apex/venv/bin/python /opt/apex/app.py
+ExecStart=/opt/apex/venv/bin/gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:80 app:app
 Restart=always
 RestartSec=5
 StandardOutput=journal
