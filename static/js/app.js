@@ -25,62 +25,64 @@ let aiSettings = { api_key: 'ollama', base_url: 'http://localhost:11434/v1', mod
 // ============================================================
 // INIT
 // ============================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function() {
     loadSettings();
     setupKeyboardShortcuts();
-    socket.emit('request_feed');
+    if (socket) socket.emit('request_feed');
     loadHistory();
 });
 
 // ============================================================
 // SOCKET EVENTS
 // ============================================================
-socket.on('connect', () => {
-    document.getElementById('connectionStatus').classList.remove('offline');
-    document.getElementById('connectionText').textContent = 'CONNECTED';
-});
+if (socket) {
+    socket.on('connect', function() {
+        document.getElementById('connectionStatus').classList.remove('offline');
+        document.getElementById('connectionText').textContent = 'CONNECTED';
+    });
 
-socket.on('disconnect', () => {
-    document.getElementById('connectionStatus').classList.add('offline');
-    document.getElementById('connectionText').textContent = 'DISCONNECTED';
-});
+    socket.on('disconnect', function() {
+        document.getElementById('connectionStatus').classList.add('offline');
+        document.getElementById('connectionText').textContent = 'DISCONNECTED';
+    });
 
-socket.on('feed_update', (e) => addFeed(e));
-socket.on('feed_history', (h) => h.forEach(e => addFeed(e)));
+    socket.on('feed_update', function(e) { addFeed(e); });
+    socket.on('feed_history', function(h) { h.forEach(function(e) { addFeed(e); }); });
 
-socket.on('progress_update', (d) => {
-    if (d.scan_id === currentScanId) {
-        const bar = document.getElementById('progressBar');
-        const fill = document.getElementById('progressFill');
-        bar.style.display = 'block';
-        fill.style.width = d.progress + '%';
-    }
-});
+    socket.on('progress_update', function(d) {
+        if (d.scan_id === currentScanId) {
+            var bar = document.getElementById('progressBar');
+            var fill = document.getElementById('progressFill');
+            bar.style.display = 'block';
+            fill.style.width = d.progress + '%';
+        }
+    });
 
-socket.on('scan_complete', (d) => {
-    vulnerabilities = d.vulnerabilities || [];
-    selectedVulns.clear();
-    updateVulnBadge(vulnerabilities.length);
-    renderVulns(d.vulnerabilities, d.summary);
-    document.getElementById('scanBtn').disabled = false;
-    document.getElementById('nukeBtn').disabled = false;
-    document.getElementById('scanStatus').innerHTML = '<span class="badge badge-success">COMPLETE</span>';
-    document.getElementById('progressBar').style.display = 'none';
-    updateStats();
-    loadHistory();
-    toast('Scan complete — ' + vulnerabilities.length + ' vulnerabilities found', 'success');
-});
+    socket.on('scan_complete', function(d) {
+        vulnerabilities = d.vulnerabilities || [];
+        selectedVulns.clear();
+        updateVulnBadge(vulnerabilities.length);
+        renderVulns(d.vulnerabilities, d.summary);
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('nukeBtn').disabled = false;
+        document.getElementById('scanStatus').innerHTML = '<span class="badge badge-success">COMPLETE</span>';
+        document.getElementById('progressBar').style.display = 'none';
+        updateStats();
+        loadHistory();
+        toast('Scan complete — ' + vulnerabilities.length + ' vulnerabilities found', 'success');
+    });
 
-socket.on('exploit_step', (d) => {
-    addExploitStep(d);
-});
+    socket.on('exploit_step', function(d) {
+        addExploitStep(d);
+    });
 
-socket.on('exploit_complete', (d) => {
-    document.getElementById('nukeBtn').disabled = false;
-    document.getElementById('scanStatus').innerHTML = '<span class="badge badge-success">DONE</span>';
-    updateStats();
-    toast(`Exploitation complete — ${d.success}/${d.success + d.failed} successful`, d.success > 0 ? 'success' : 'warning');
-});
+    socket.on('exploit_complete', function(d) {
+        document.getElementById('nukeBtn').disabled = false;
+        document.getElementById('scanStatus').innerHTML = '<span class="badge badge-success">DONE</span>';
+        updateStats();
+        toast('Exploitation complete — ' + d.success + '/' + (d.success + d.failed) + ' successful', d.success > 0 ? 'success' : 'warning');
+    });
+}
 
 // ============================================================
 // NAVIGATION
