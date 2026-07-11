@@ -223,9 +223,26 @@ def toggle_proxy():
 @login_required
 def toggle_tor():
     data = request.get_json()
-    Config.TOR_ENABLED = data.get('enabled', False)
-    emit_feed('system', f'Tor {"ENABLED" if Config.TOR_ENABLED else "DISABLED"}', 'info')
-    return jsonify({'tor_enabled': Config.TOR_ENABLED})
+    enabled = data.get('enabled', False)
+    Config.TOR_ENABLED = enabled
+    
+    if enabled:
+        # Actually verify Tor is running by testing the SOCKS port
+        try:
+            import socks
+            s = socks.socksocket()
+            s.settimeout(5)
+            s.connect(('127.0.0.1', Config.TOR_SOCKS_PORT))
+            s.close()
+            emit_feed('system', f'🟢 Tor ENABLED — SOCKS port {Config.TOR_SOCKS_PORT} verified', 'success')
+            return jsonify({'tor_enabled': True, 'verified': True})
+        except Exception as e:
+            emit_feed('system', f'🔴 Tor toggle ON but SOCKS port {Config.TOR_SOCKS_PORT} not reachable. Start Tor first: systemctl start tor', 'error')
+            Config.TOR_ENABLED = False
+            return jsonify({'tor_enabled': False, 'verified': False, 'error': f'Tor SOCKS port not reachable. Run: systemctl start tor'})
+    else:
+        emit_feed('system', 'Tor DISABLED', 'info')
+        return jsonify({'tor_enabled': False, 'verified': False})
 
 @app.route('/api/vpn/toggle', methods=['POST'])
 @login_required

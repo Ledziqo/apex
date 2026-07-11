@@ -108,6 +108,8 @@ function switchTab(tab) {
 // ============================================================
 // SCAN
 // ============================================================
+var scanPollInterval = null;
+
 function startScan(targetOverride) {
     var target = targetOverride || document.getElementById('targetInput').value.trim();
     if (!target) { toast('Enter a target URL', 'error'); return; }
@@ -116,15 +118,53 @@ function startScan(targetOverride) {
     document.getElementById('scanBtn').disabled = true;
     document.getElementById('nukeBtn').disabled = true;
     document.getElementById('scanStatus').textContent = 'SCANNING...';
-    document.getElementById('resultsPanel').innerHTML = '<div class="empty">Scanning ' + escapeHtml(target) + '...</div>';
+    document.getElementById('resultsPanel').innerHTML = '<div class="empty">Scanning ' + escapeHtml(target) + '...<br><small>This may take 30-60 seconds</small></div>';
     vulnerabilities = [];
     addAiMsg('ai', '🔍 Starting scan on ' + target + '... Crawling pages, testing parameters, checking for vulnerabilities.');
+    
+    // Clear any existing poll
+    if (scanPollInterval) clearInterval(scanPollInterval);
+    
     fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ target: target, scan_type: 'full' })
     }).then(function(r) { return r.json(); }).then(function(d) {
         currentScanId = d.scan_id;
+        // Start polling for status (fallback if WebSocket fails)
+        scanPollInterval = setInterval(function() {
+            fetch('/api/scan/' + currentScanId + '/status')
+                .then(function(r) { return r.json(); })
+                .then(function(s) {
+                    if (s.status === 'completed') {
+                        clearInterval(scanPollInterval);
+                        vulnerabilities = s.vulnerabilities || [];
+                        var crit = 0, high = 0, med = 0, low = 0;
+                        vulnerabilities.forEach(function(v) {
+                            if (v.severity === 'critical') crit++;
+                            else if (v.severity === 'high') high++;
+                            else if (v.severity === 'medium') med++;
+                            else low++;
+                        });
+                        renderResults(vulnerabilities, {critical: crit, high: high, medium: med, low: low});
+                        document.getElementById('scanBtn').disabled = false;
+                        document.getElementById('nukeBtn').disabled = false;
+                        document.getElementById('scanStatus').textContent = 'DONE';
+                        loadHistory();
+                        toast(vulnerabilities.length + ' vulnerabilities found', 'success');
+                        aiNarrate('scan_complete', {vulnerabilities: vulnerabilities, summary: {critical: crit, high: high, medium: med, low: low}});
+                    } else if (s.status === 'failed') {
+                        clearInterval(scanPollInterval);
+                        document.getElementById('scanBtn').disabled = false;
+                        document.getElementById('nukeBtn').disabled = false;
+                        document.getElementById('scanStatus').textContent = 'FAILED';
+                        document.getElementById('resultsPanel').innerHTML = '<div class="empty">Scan failed: ' + escapeHtml(s.error || 'Unknown error') + '</div>';
+                        toast('Scan failed', 'error');
+                    } else {
+                        document.getElementById('scanStatus').textContent = 'SCANNING... ' + (s.progress || 0) + '%';
+                    }
+                });
+        }, 2000);
     }).catch(function() {
         document.getElementById('scanBtn').disabled = false;
         document.getElementById('scanStatus').textContent = 'FAILED';
