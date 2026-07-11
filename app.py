@@ -1704,6 +1704,24 @@ def api_ai_test():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+@app.route('/api/settings/ransomware', methods=['POST'])
+@login_required
+def api_settings_ransomware():
+    """Save ransomware image and message settings."""
+    data = request.get_json()
+    Config.RANSOMWARE_IMAGE = data.get('image', '')
+    Config.RANSOMWARE_MESSAGE = data.get('message', '')
+    return jsonify({'success': True})
+
+@app.route('/api/settings/deface', methods=['POST'])
+@login_required
+def api_settings_deface():
+    """Save XSS deface image and message settings."""
+    data = request.get_json()
+    Config.DEFACE_IMAGE = data.get('image', '')
+    Config.DEFACE_MESSAGE = data.get('message', '')
+    return jsonify({'success': True})
+
 # ============================================================
 # DETAILED EXPLOIT EVENT EMITTER
 # ============================================================

@@ -3,296 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX v3.0 // Command Center</title>
+    <title>APEX // Command Center</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
-    <div class="app-container">
-        <aside class="sidebar" id="sidebar">
-            <div class="sidebar-logo" onclick="switchTab('overview')">APEX<span style="font-size:9px;color:var(--orange);margin-left:4px;">v3.0</span></div>
-            <nav class="sidebar-nav" role="navigation">
-                <div class="nav-section">Command</div>
-                <div class="nav-item active" data-tab="overview" onclick="switchTab('overview')"><span class="nav-icon">📊</span> Overview</div>
-                <div class="nav-item" data-tab="target" onclick="switchTab('target')"><span class="nav-icon">🎯</span> Target</div>
-                <div class="nav-item" data-tab="exploit" onclick="switchTab('exploit')"><span class="nav-icon">💣</span> Exploit<span class="nav-badge" id="vulnBadge" style="display:none;">0</span></div>
-                <div class="nav-section">Arsenal</div>
-                <div class="nav-item" data-tab="tools" onclick="switchTab('tools')"><span class="nav-icon">🛠️</span> Tools</div>
-                <div class="nav-item" data-tab="chains" onclick="switchTab('chains')"><span class="nav-icon">⛓️</span> Chains</div>
-                <div class="nav-item" data-tab="loot" onclick="switchTab('loot')"><span class="nav-icon">📁</span> Loot</div>
-                <div class="nav-section">Data</div>
-                <div class="nav-item" data-tab="history" onclick="switchTab('history')"><span class="nav-icon">📜</span> History</div>
-                <div class="nav-item" data-tab="browser" onclick="switchTab('browser')"><span class="nav-icon">🌐</span> Browser</div>
-                <div class="nav-item" data-tab="settings" onclick="switchTab('settings')"><span class="nav-icon">⚙️</span> Settings</div>
-            </nav>
-            <div class="sidebar-footer">
-                <span class="status-dot" id="connectionStatus"></span>
-                <span id="connectionText">CONNECTED</span>
-                <button class="theme-toggle-btn" onclick="toggleTheme()" title="Toggle theme">🌓</button>
-                <a href="/logout" style="margin-left:auto;color:var(--text-muted);text-decoration:none;font-size:10px;">EXIT</a>
+    <div class="app">
+        <!-- SIDEBAR -->
+        <nav class="sidebar">
+            <div class="logo" onclick="switchTab('dashboard')">🔺 APEX</div>
+            <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">🏠 Dashboard</div>
+            <div class="nav-item" data-tab="history" onclick="switchTab('history')">📜 History</div>
+            <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
+            <div class="sidebar-bottom">
+                <span class="status-dot" id="connDot"></span>
+                <span id="connText">ONLINE</span>
+                <a href="/logout" class="exit-link">EXIT</a>
             </div>
-        </aside>
-        <div class="main-content">
-            <header class="topbar">
-                <button class="hamburger" onclick="toggleSidebar()">☰</button>
-                <input type="text" class="target-input" id="targetInput" placeholder="TARGET URL (https://example.com)">
-                <button class="btn btn-primary" id="scanBtn" onclick="startScan('full')">🔍 SCAN</button>
-                <button class="btn btn-danger nuke-btn" id="nukeBtn" onclick="startNuke()" title="☢️ Autonomous Kill Chain">☢️ NUKE</button>
-                <div class="anon-toggles">
-                    <div class="anon-toggle" id="proxyToggle" onclick="toggleAnon('proxy')"><div class="anon-dot"></div>PROXY</div>
-                    <div class="anon-toggle" id="torToggle" onclick="toggleAnon('tor')"><div class="anon-dot"></div>TOR</div>
-                    <div class="anon-toggle" id="vpnToggle" onclick="toggleAnon('vpn')"><div class="anon-dot"></div>VPN</div>
+        </nav>
+
+        <!-- MAIN -->
+        <div class="main">
+            <!-- TOP BAR -->
+            <div class="topbar">
+                <input type="text" id="targetInput" placeholder="Target URL (https://example.com)" class="target-input">
+                <button class="btn btn-orange" id="scanBtn" onclick="startScan()">🔍 SCAN</button>
+                <button class="btn btn-red" id="nukeBtn" onclick="startNuke()">☢️ NUKE</button>
+                <div class="toggles">
+                    <span class="toggle" id="proxyToggle" onclick="toggleAnon('proxy')">PROXY</span>
+                    <span class="toggle" id="torToggle" onclick="toggleAnon('tor')">TOR</span>
+                    <span class="toggle" id="vpnToggle" onclick="toggleAnon('vpn')">VPN</span>
                 </div>
-                <div class="proxy-health" id="proxyHealth" title="Proxy Health">
-                    <span class="health-dot" id="healthDot"></span>
-                </div>
-                <span id="scanStatus" style="font-size:11px;"></span>
-                <button class="btn btn-sm" onclick="toggleAiSidebar()" style="margin-left:auto;">🤖 AI</button>
-            </header>
-            <div class="progress-bar" id="progressBar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-            <div class="workspace">
-                <div class="workspace-main">
-                    <!-- Overview -->
-                    <div class="tab-content active" id="tab-overview">
-                        <div class="stats-grid">
-                            <div class="stat-card"><div class="stat-value" id="statScans">0</div><div class="stat-label">Total Scans</div></div>
-                            <div class="stat-card"><div class="stat-value" id="statVulns">0</div><div class="stat-label">Vulns Found</div></div>
-                            <div class="stat-card"><div class="stat-value" id="statExploits">0</div><div class="stat-label">Exploits Success</div></div>
-                            <div class="stat-card"><div class="stat-value" style="color:var(--success);">ONLINE</div><div class="stat-label">System Status</div></div>
-                        </div>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
-                            <div class="panel"><div class="panel-header">📊 VULNERABILITY BREAKDOWN</div><div class="panel-body" style="text-align:center;padding:16px;"><canvas id="vulnChart" width="200" height="200"></canvas><div id="vulnChartEmpty" class="empty-state" style="padding:20px;"><div class="empty-icon">📊</div>Run a scan to see stats</div></div></div>
-                            <div class="panel"><div class="panel-header">⏱️ SCAN TIMELINE</div><div class="panel-body" id="scanTimeline" style="max-height:200px;overflow-y:auto;"><div class="empty-state" style="padding:20px;"><div class="empty-icon">⏱️</div>No scans yet</div></div></div>
-                        </div>
-                        <div class="panel" style="flex:1;"><div class="panel-header">LIVE TERMINAL FEED</div><div class="panel-body terminal-feed" id="liveFeed"><div class="empty-state"><div class="empty-icon">🖥️</div>Awaiting target...</div></div></div>
-                        <div class="panel" style="margin-top:10px;"><div class="panel-header">🛡️ ANONYMITY REPORT <button class="btn btn-xs" onclick="refreshAnonymityReport()" style="margin-left:8px;">🔄 REFRESH</button></div><div class="panel-body" id="anonymityReportPanel"><div class="empty-state"><div class="empty-icon">🛡️</div>Loading anonymity status...</div></div></div>
-                        <div style="display:flex;gap:10px;margin-top:10px;flex-wrap:wrap;">
-                            <button class="btn btn-primary" onclick="document.getElementById('targetInput').focus();switchTab('exploit')">🎯 NEW SCAN</button>
-                            <button class="btn" onclick="switchTab('history')">📜 HISTORY</button>
-                            <button class="btn" onclick="switchTab('tools')">🛠️ TOOLS</button>
-                            <button class="btn" onclick="switchTab('settings')">⚙️ SETTINGS</button>
-                        </div>
-                    </div>
-                    <!-- Target -->
-                    <div class="tab-content" id="tab-target">
-                        <div class="panel" style="flex:1;"><div class="panel-header">TARGET INFORMATION</div><div class="panel-body" id="targetInfoPanel"><div class="empty-state"><div class="empty-icon">🎯</div>Run a scan to populate target information</div></div></div>
-                        <div class="panel" style="margin-top:10px;"><div class="panel-header">📦 BATCH SCAN</div><div class="panel-body">
-                            <textarea id="batchTargets" placeholder="Enter targets (one per line)&#10;https://example1.com&#10;https://example2.com&#10;192.168.1.1" style="width:100%;height:80px;background:var(--bg-primary);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:10px;border-radius:6px;resize:vertical;"></textarea>
-                            <div style="display:flex;gap:8px;margin-top:8px;">
-                                <button class="btn btn-primary" onclick="startBatchScan()">📦 BATCH SCAN</button>
-                                <input type="file" id="batchFileInput" accept=".txt,.csv" onchange="handleBatchFile(event)" style="display:none;">
-                                <button class="btn" onclick="document.getElementById('batchFileInput').click()">📂 IMPORT FILE</button>
-                            </div>
-                            <div id="batchProgress" style="margin-top:8px;display:none;"><div class="progress-bar"><div class="progress-fill" id="batchProgressFill" style="width:0%;"></div></div><span id="batchStatus" style="font-size:11px;color:var(--text-muted);"></span></div>
-                        </div></div>
-                    </div>
-                    <!-- Exploit -->
-                    <div class="tab-content" id="tab-exploit">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;overflow:hidden;">
-                            <div style="display:flex;flex-direction:column;overflow:hidden;gap:12px;">
-                                <div class="panel" style="flex:1;"><div class="panel-header">VULNERABILITIES <span id="vulnCount" style="color:var(--text-muted);">0</span></div><div class="panel-body" id="resultsPanel" style="max-height:350px;"><div class="empty-state"><div class="empty-icon">🛡️</div>Enter target and initiate scan</div></div></div>
-                                <div class="panel" style="flex:1;"><div class="panel-header">TERMINAL FEED</div><div class="panel-body terminal-feed" id="liveFeed2"><div class="empty-state"><div class="empty-icon">🖥️</div>Awaiting target...</div></div></div>
-                            </div>
-                            <div style="display:flex;flex-direction:column;overflow:hidden;gap:12px;">
-                                <div class="panel" style="flex:1;"><div class="panel-header">💣 EXPLOIT MONITOR <span style="color:var(--text-muted);font-size:9px;">LIVE</span></div><div class="panel-body exploit-monitor" id="exploitMonitor"><div class="empty-state"><div class="empty-icon">💣</div>Awaiting exploitation...</div></div></div>
-                                <div class="panel"><div class="panel-header">🧠 NEXT STEPS (AI)</div><div class="panel-body" id="nextStepsPanel"><div class="empty-state"><div class="empty-icon">🧠</div>Run exploits to get AI suggestions</div></div></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Tools -->
-                    <div class="tab-content" id="tab-tools">
-                        <div class="tool-category"><h3>🔍 Reconnaissance</h3></div>
-                        <div class="tool-grid">
-                            <div class="tool-card" onclick="openTool('admin_finder')"><div class="tool-icon">🔍</div><div class="tool-name">ADMIN FINDER</div><div class="tool-desc">500+ paths</div></div>
-                            <div class="tool-card" onclick="openTool('sensitive_files')"><div class="tool-icon">📄</div><div class="tool-name">SENSITIVE FILES</div><div class="tool-desc">.git .env configs</div></div>
-                            <div class="tool-card" onclick="openTool('osint')"><div class="tool-icon">🌐</div><div class="tool-name">OSINT PROFILER</div><div class="tool-desc">Target intel</div></div>
-                        </div>
-                        <div class="tool-category"><h3>💉 Injection Attacks</h3></div>
-                        <div class="tool-grid">
-                            <div class="tool-card" onclick="openTool('nosqli')"><div class="tool-icon">🗄️</div><div class="tool-name">NoSQL INJECTION</div><div class="tool-desc">MongoDB Redis</div></div>
-                            <div class="tool-card" onclick="openTool('xxe')"><div class="tool-icon">📋</div><div class="tool-name">XXE INJECTION</div><div class="tool-desc">XML External Entity</div></div>
-                            <div class="tool-card" onclick="openTool('smuggling')"><div class="tool-icon">📦</div><div class="tool-name">REQ SMUGGLING</div><div class="tool-desc">CL.TE TE.CL</div></div>
-                            <div class="tool-card" onclick="openTool('proto_pollution')"><div class="tool-icon">🧬</div><div class="tool-name">PROTO POLLUTION</div><div class="tool-desc">JS Prototype</div></div>
-                        </div>
-                        <div class="tool-category"><h3>🔌 API & Web</h3></div>
-                        <div class="tool-grid">
-                            <div class="tool-card" onclick="openTool('api_hack')"><div class="tool-icon">🔌</div><div class="tool-name">API HACKING</div><div class="tool-desc">GraphQL JWT</div></div>
-                            <div class="tool-card" onclick="openTool('oauth')"><div class="tool-icon">🔐</div><div class="tool-name">OAUTH HIJACK</div><div class="tool-desc">Open Redirect</div></div>
-                            <div class="tool-card" onclick="openTool('waf_evasion')"><div class="tool-icon">🛡️</div><div class="tool-name">WAF EVASION</div><div class="tool-desc">Bypass encoders</div></div>
-                        </div>
-                        <div class="tool-category"><h3>💣 Exploitation</h3></div>
-                        <div class="tool-grid">
-                            <div class="tool-card" onclick="openTool('c2')"><div class="tool-icon">💀</div><div class="tool-name">C2 BEACON</div><div class="tool-desc">Generate payloads</div></div>
-                            <div class="tool-card" onclick="openTool('ransomware')"><div class="tool-icon">🔒</div><div class="tool-name">RANSOMWARE</div><div class="tool-desc">Encrypt & decrypt</div></div>
-                            <div class="tool-card" onclick="openTool('exploit_chains')"><div class="tool-icon">⛓️</div><div class="tool-name">EXPLOIT CHAINS</div><div class="tool-desc">Auto chain vulns</div></div>
-                            <div class="tool-card" onclick="openTool('payload_forge')"><div class="tool-icon">🔧</div><div class="tool-name">PAYLOAD FORGE</div><div class="tool-desc">Encode & obfuscate</div></div>
-                        </div>
-                        <div class="tool-category"><h3>🔧 Utilities</h3></div>
-                        <div class="tool-grid">
-                            <div class="tool-card" onclick="openTool('bruteforce')"><div class="tool-icon">🔑</div><div class="tool-name">BRUTEFORCE</div><div class="tool-desc">HTTP / SSH / FTP</div></div>
-                            <div class="tool-card" onclick="openTool('phishing')"><div class="tool-icon">🎣</div><div class="tool-name">PHISHING</div><div class="tool-desc">Clone login pages</div></div>
-                            <div class="tool-card" onclick="openTool('cloud')"><div class="tool-icon">☁️</div><div class="tool-name">CLOUD ATTACK</div><div class="tool-desc">AWS / Azure / GCP</div></div>
-                            <div class="tool-card" onclick="openTool('creds')"><div class="tool-icon">🔓</div><div class="tool-name">CRED DUMP</div><div class="tool-desc">Mimikatz / Kerberoast</div></div>
-                            <div class="tool-card" onclick="window.open('/ransomware/preview','_blank')"><div class="tool-icon">📝</div><div class="tool-name">NOTE EDITOR</div><div class="tool-desc">Ransomware notes</div></div>
-                        </div>
-                    </div>
-                    <!-- Chains -->
-                    <div class="tab-content" id="tab-chains">
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;flex:1;overflow:hidden;">
-                            <div style="display:flex;flex-direction:column;gap:12px;">
-                                <div class="panel" style="flex:1;"><div class="panel-header">⛓️ ATTACK CHAINS</div><div class="panel-body" id="chainsPanel"><div class="empty-state"><div class="empty-icon">⛓️</div>Loading chain templates...</div></div></div>
-                                <div class="panel"><div class="panel-header">🎯 TARGET QUEUE</div><div class="panel-body">
-                                    <div style="display:flex;gap:8px;margin-bottom:10px;"><input type="text" id="queueTargetInput" placeholder="Add target to queue..." class="target-input" style="flex:1;"><button class="btn btn-primary btn-sm" onclick="addToQueue()">+ ADD</button></div>
-                                    <div id="queueList"><div class="empty-state" style="padding:10px;">Queue empty</div></div>
-                                    <div style="display:flex;gap:8px;margin-top:8px;"><button class="btn btn-success btn-sm" onclick="startQueue()">▶ START QUEUE</button><button class="btn btn-sm" onclick="clearQueue()">CLEAR</button></div>
-                                </div></div>
-                            </div>
-                            <div class="panel" style="flex:1;"><div class="panel-header">💣 CHAIN EXECUTION MONITOR</div><div class="panel-body exploit-monitor" id="chainMonitor"><div class="empty-state"><div class="empty-icon">⛓️</div>Execute a chain to see progress</div></div></div>
-                        </div>
-                    </div>
-                    <!-- Loot -->
-                    <div class="tab-content" id="tab-loot"><div class="panel" style="flex:1;"><div class="panel-header">📁 LOOT & EXFILTRATED DATA</div><div class="panel-body" id="lootPanel"><div class="empty-state"><div class="empty-icon">📁</div>No loot collected yet. Run exploits to gather data.</div></div></div></div>
-                    <!-- History -->
-                    <div class="tab-content" id="tab-history"><div class="panel" style="flex:1;"><div class="panel-header">📜 SCAN HISTORY</div><div class="panel-body" id="historyPanel"><div class="empty-state"><div class="empty-icon">📜</div>Loading history...</div></div></div></div>
-                    <!-- Browser -->
-                    <div class="tab-content" id="tab-browser">
-                        <div style="display:flex;flex-direction:column;height:100%;gap:8px;">
-                            <div style="display:flex;gap:8px;align-items:center;">
-                                <input type="text" id="browserSearchInput" placeholder="🔍 Search targets (dork queries, URLs, tech stack)..." style="flex:1;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;" onkeydown="if(event.key==='Enter')browserSearch()">
-                                <button class="btn btn-primary" onclick="browserSearch()">🔍 SEARCH</button>
-                                <select id="browserSearchType" style="padding:8px;background:var(--bg-primary);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;">
-                                    <option value="web">Web</option>
-                                    <option value="admin_panels">Admin Panels</option>
-                                    <option value="exposed_files">Exposed Files</option>
-                                    <option value="vulnerable_tech">Vuln Tech</option>
-                                    <option value="login_pages">Login Pages</option>
-                                    <option value="api_endpoints">API Endpoints</option>
-                                    <option value="database_exposure">DB Exposure</option>
-                                </select>
-                            </div>
-                            <div style="display:flex;gap:8px;">
-                                <input type="text" id="browserUrlInput" placeholder="🌐 Enter URL to browse through VPN/Tor..." style="flex:1;padding:8px 12px;background:var(--bg-primary);border:1px solid var(--orange);border-radius:6px;color:var(--text);font-family:var(--font-mono);font-size:12px;outline:none;" onkeydown="if(event.key==='Enter')browserNavigate()">
-                                <button class="btn btn-primary" onclick="browserNavigate()">▶ GO</button>
-                                <button class="btn" onclick="browserNavigate(document.getElementById('browserUrlInput').value, true)">🔍 SCAN+GO</button>
-                            </div>
-                            <div id="browserSearchResults" style="max-height:200px;overflow-y:auto;display:none;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;padding:8px;"></div>
-                            <div style="flex:1;position:relative;background:var(--bg-primary);border:1px solid var(--border);border-radius:8px;overflow:hidden;">
-                                <div id="browserLoading" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(15,17,23,0.9);z-index:10;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;">
-                                    <div style="font-size:24px;">🌐</div>
-                                    <div style="color:var(--orange);font-family:var(--font-mono);">Loading through VPN/Tor...</div>
-                                    <div id="browserLoadingUrl" style="color:var(--text-muted);font-size:11px;"></div>
-                                </div>
-                                <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms" style="width:100%;height:100%;border:none;background:#fff;" src="about:blank"></iframe>
-                            </div>
-                            <div id="browserAiPanel" style="display:none;background:var(--bg-tertiary);border:1px solid var(--border);border-radius:6px;padding:10px;font-size:11px;max-height:120px;overflow-y:auto;">
-                                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-                                    <span style="color:var(--orange);font-weight:700;">🤖 AI PAGE ANALYSIS</span>
-                                    <button class="btn btn-xs" onclick="document.getElementById('browserAiPanel').style.display='none'">×</button>
-                                </div>
-                                <div id="browserAiContent" style="color:var(--text-secondary);line-height:1.5;"></div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Settings -->
-                    <div class="tab-content" id="tab-settings">
-                        <div style="max-width:600px;">
-                            <div class="settings-group"><h4>🤖 AI Configuration</h4>
-                                <div class="settings-row"><label>API Key</label><input type="password" id="settingApiKey" placeholder="ollama (or your API key)"></div>
-                                <div class="settings-row"><label>Base URL</label><input type="text" id="settingBaseUrl" placeholder="http://localhost:11434/v1"></div>
-                                <div class="settings-row"><label>Model</label><input type="text" id="settingModel" placeholder="llama3.2"></div>
-                                <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary" onclick="saveSettings()">💾 SAVE</button><button class="btn btn-success" onclick="testAiConnection()">🔌 TEST CONNECTION</button></div>
-                            </div>
-                            <div class="settings-group"><h4>🔔 Webhooks</h4>
-                                <div class="settings-row"><label>Discord URL</label><input type="text" id="settingDiscordUrl" placeholder="https://discord.com/api/webhooks/..."></div>
-                                <div class="settings-row"><label>Telegram Token</label><input type="text" id="settingTelegramToken" placeholder="bot..."></div>
-                                <div class="settings-row"><label>Telegram Chat ID</label><input type="text" id="settingTelegramChatId" placeholder="123456789"></div>
-                                <div style="display:flex;gap:8px;margin-top:10px;"><button class="btn btn-primary" onclick="saveWebhookSettings()">💾 SAVE</button><button class="btn btn-success" onclick="testWebhooks()">🔌 TEST</button></div>
-                            </div>
-                            <div class="settings-group"><h4>💾 Sessions</h4>
-                                <div style="display:flex;gap:8px;margin-bottom:10px;"><input type="text" id="sessionName" placeholder="Session name" class="target-input" style="flex:1;"><button class="btn btn-primary btn-sm" onclick="saveSession()">SAVE</button></div>
-                                <div id="sessionList"><div class="empty-state" style="padding:10px;">No saved sessions</div></div>
-                            </div>
-                            <div class="settings-group"><h4>⌨️ Keyboard Shortcuts</h4>
-                                <div style="font-size:11px;color:var(--text-secondary);line-height:2;">
-                                    <kbd style="background:var(--bg-primary);padding:2px 6px;border-radius:3px;border:1px solid var(--border);">Ctrl+Enter</kbd> Start Scan<br>
-                                    <kbd style="background:var(--bg-primary);padding:2px 6px;border-radius:3px;border:1px solid var(--border);">Ctrl+Shift+N</kbd> NUKE All<br>
-                                    <kbd style="background:var(--bg-primary);padding:2px 6px;border-radius:3px;border:1px solid var(--border);">Ctrl+K</kbd> Focus AI Chat<br>
-                                    <kbd style="background:var(--bg-primary);padding:2px 6px;border-radius:3px;border:1px solid var(--border);">?</kbd> Show All Shortcuts<br>
-                                    <kbd style="background:var(--bg-primary);padding:2px 6px;border-radius:3px;border:1px solid var(--border);">Esc</kbd> Close Modal
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <aside class="ai-sidebar" id="aiSidebar">
-                    <div class="ai-sidebar-header">🤖 AI CO-PILOT<button onclick="toggleAiSidebar()">×</button></div>
-                    <div class="ai-chat-messages" id="aiChatMessages"><div class="chat-msg ai">Ready to assist. Ask me anything about the target, vulnerabilities, payloads, or next steps.<div class="msg-time">--:--:--</div></div></div>
-                    <div class="ai-chat-input-area"><textarea id="aiChatInput" placeholder="Ask your AI co-pilot..." rows="1" onkeydown="handleAiKeydown(event)"></textarea><button class="btn btn-primary btn-sm" onclick="sendAiMessage()">▶</button></div>
-                </aside>
+                <span id="scanStatus" class="scan-status"></span>
             </div>
-            <footer class="bottombar">
-                <div class="bb-item"><span class="bb-dot green"></span> System Online</div>
-                <div class="bb-item">Targets: <span id="bbTargets">0</span></div>
-                <div class="bb-item">Vulns: <span id="bbVulns">0</span></div>
-                <div class="bb-item">Exploits: <span id="bbExploits">0</span></div>
-                <div class="bb-item" style="margin-left:auto;">APEX v3.0</div>
-            </footer>
-        </div>
-    </div>
-    <!-- Keyboard Shortcuts Modal -->
-    <div class="modal-overlay" id="shortcutsModal" style="display:none;" onclick="if(event.target===this)closeShortcutsModal()">
-        <div class="modal" style="max-width:500px;">
-            <div class="panel-header">⌨️ KEYBOARD SHORTCUTS <button onclick="closeShortcutsModal()" style="float:right;background:none;border:none;color:var(--text);cursor:pointer;font-size:16px;">×</button></div>
-            <div class="panel-body" style="font-size:12px;line-height:2.2;">
-                <div><kbd>Ctrl+Enter</kbd> — Start Scan</div>
-                <div><kbd>Ctrl+Shift+N</kbd> — NUKE Mode</div>
-                <div><kbd>Ctrl+K</kbd> — Focus AI Chat</div>
-                <div><kbd>Ctrl+B</kbd> — Batch Scan</div>
-                <div><kbd>Ctrl+T</kbd> — Toggle Theme</div>
-                <div><kbd>?</kbd> — Show This Modal</div>
-                <div><kbd>Esc</kbd> — Close Modal</div>
-                <div><kbd>1-7</kbd> — Switch Tabs</div>
+
+            <!-- DASHBOARD TAB -->
+            <div class="tab active" id="tab-dashboard">
+                <div class="dashboard-grid">
+                    <!-- BROWSER PANEL -->
+                    <div class="panel browser-panel">
+                        <div class="panel-header">🌐 BROWSER</div>
+                        <div class="browser-controls">
+                            <input type="text" id="browserUrl" placeholder="Enter URL to browse..." onkeydown="if(event.key==='Enter')browserNavigate()">
+                            <button class="btn btn-orange btn-sm" onclick="browserNavigate()">GO</button>
+                            <button class="btn btn-sm" onclick="browserNavigate(document.getElementById('browserUrl').value, true)">SCAN+GO</button>
+                        </div>
+                        <div class="browser-frame-wrap">
+                            <div class="browser-loading" id="browserLoading">
+                                <span>🌐 Loading through proxy...</span>
+                                <span id="browserLoadingUrl"></span>
+                            </div>
+                            <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms" src="about:blank"></iframe>
+                        </div>
+                    </div>
+
+                    <!-- RESULTS PANEL -->
+                    <div class="panel results-panel">
+                        <div class="panel-header">💣 RESULTS <span id="vulnCount">0</span></div>
+                        <div class="panel-body" id="resultsPanel">
+                            <div class="empty">Enter a target and click SCAN</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI CHAT -->
+                <div class="ai-chat">
+                    <div class="ai-messages" id="aiMessages">
+                        <div class="ai-msg ai">APEX AI ready. Ask me about targets, vulnerabilities, or next steps.</div>
+                    </div>
+                    <div class="ai-input-row">
+                        <textarea id="aiInput" placeholder="Ask AI..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAi();}"></textarea>
+                        <button class="btn btn-orange btn-sm" onclick="sendAi()">▶</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORY TAB -->
+            <div class="tab" id="tab-history">
+                <div class="panel" style="flex:1;">
+                    <div class="panel-header">📜 SCAN HISTORY</div>
+                    <div class="panel-body" id="historyPanel">
+                        <div class="empty">Loading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS TAB -->
+            <div class="tab" id="tab-settings">
+                <div class="settings-grid">
+                    <div class="panel">
+                        <div class="panel-header">🤖 AI CONFIG</div>
+                        <div class="panel-body">
+                            <label>API Key</label>
+                            <input type="password" id="setApiKey" placeholder="ollama or your key">
+                            <label>Base URL</label>
+                            <input type="text" id="setBaseUrl" placeholder="https://api.ollama.com/v1">
+                            <label>Model</label>
+                            <input type="text" id="setModel" placeholder="deepseek-v4-pro">
+                            <button class="btn btn-orange btn-sm" onclick="saveAiSettings()">💾 SAVE</button>
+                            <button class="btn btn-sm" onclick="testAi()">🔌 TEST</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">🔒 RANSOMWARE</div>
+                        <div class="panel-body">
+                            <label>Image URL</label>
+                            <input type="text" id="setRansomImg" placeholder="https://i.imgur.com/xxx.png">
+                            <label>Message</label>
+                            <textarea id="setRansomMsg" placeholder="Your files have been encrypted..."></textarea>
+                            <button class="btn btn-orange btn-sm" onclick="saveRansomSettings()">💾 SAVE</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">💉 XSS DEFACE</div>
+                        <div class="panel-body">
+                            <label>Image URL</label>
+                            <input type="text" id="setDefaceImg" placeholder="https://i.imgur.com/xxx.png">
+                            <label>Message</label>
+                            <textarea id="setDefaceMsg" placeholder="Hacked by..."></textarea>
+                            <button class="btn btn-orange btn-sm" onclick="saveDefaceSettings()">💾 SAVE</button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalContent"></div></div>
+
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/js/app.js?v=4"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (typeof addFeed !== 'undefined') {
-                var origAddFeed = addFeed;
-                addFeed = function(entry) {
-                    origAddFeed(entry);
-                    var feed2 = document.getElementById('liveFeed2');
-                    if (feed2) {
-                        if (feed2.querySelector('.empty-state')) feed2.innerHTML = '';
-                        var div = document.createElement('div');
-                        div.className = 'feed-line';
-                        div.innerHTML = '<span class="ts">[' + (entry.timestamp || '') + ']</span><span class="lvl-' + (entry.level || 'info') + '">' + escapeHtml(entry.message || '') + '</span>';
-                        feed2.appendChild(div);
-                        feed2.scrollTop = feed2.scrollHeight;
-                    }
-                };
-            }
-            setInterval(function() {
-                fetch('/api/history').then(function(r) { return r.json(); }).then(function(data) {
-                    var bbT = document.getElementById('bbTargets');
-                    var bbV = document.getElementById('bbVulns');
-                    var bbE = document.getElementById('bbExploits');
-                    if (bbT) bbT.textContent = data.length;
-                    if (bbV) bbV.textContent = data.reduce(function(s, h) { return s + (h.vulns_found || 0); }, 0);
-                    if (bbE) bbE.textContent = data.reduce(function(s, h) { return s + (h.exploits_success || 0); }, 0);
-                }).catch(function() {});
-            }, 10000);
-            if (socket && socket.emit) {
-                socket.emit('request_feed');
-            }
-        });
-    </script>
+    <script src="/static/js/app.js?v=5"></script>
 </body>
 </html>
