@@ -11,12 +11,28 @@
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- PREVIEW MODAL -->
+    <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreviewModal()">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="previewModalTitle">Preview</span>
+                <button class="modal-close" onclick="closePreviewModal()">✕</button>
+            </div>
+            <div class="modal-body">
+                <iframe id="previewModalFrame" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+            </div>
+        </div>
+    </div>
+
     <div class="app">
         <!-- SIDEBAR -->
         <nav class="sidebar">
             <div class="logo" onclick="switchTab('dashboard')">🔺 APEX</div>
             <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">🏠 Dashboard</div>
             <div class="nav-item" data-tab="history" onclick="switchTab('history')">📜 History</div>
+            <div class="nav-item" data-tab="logs" onclick="switchTab('logs')">📋 Logs</div>
+            <div class="nav-item" data-tab="safety" onclick="switchTab('safety')">🛡️ Safety</div>
             <div class="nav-item" data-tab="settings" onclick="switchTab('settings')">⚙️ Settings</div>
             <div class="sidebar-bottom">
                 <span class="status-dot" id="connDot"></span>
@@ -45,18 +61,27 @@
                 <div class="dashboard-grid">
                     <!-- BROWSER PANEL -->
                     <div class="panel browser-panel">
-                        <div class="panel-header">🌐 BROWSER</div>
+                        <div class="panel-header">🌐 BROWSER <span id="browserStatus" class="browser-status-indicator"></span></div>
                         <div class="browser-controls">
-                            <input type="text" id="browserUrl" placeholder="Enter URL to browse..." onkeydown="if(event.key==='Enter')browserNavigate()">
+                            <button class="btn btn-sm browser-nav-btn" onclick="browserBack()" title="Back">◀</button>
+                            <button class="btn btn-sm browser-nav-btn" onclick="browserForward()" title="Forward">▶</button>
+                            <button class="btn btn-sm browser-nav-btn" onclick="browserRefresh()" title="Refresh">↻</button>
+                            <input type="text" id="browserUrl" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserNavigate()">
                             <button class="btn btn-orange btn-sm" onclick="browserNavigate()">GO</button>
-                            <button class="btn btn-sm" onclick="browserNavigate(document.getElementById('browserUrl').value, true)">SCAN+GO</button>
+                        </div>
+                        <!-- BROWSER ACTION BAR -->
+                        <div class="browser-action-bar">
+                            <button class="btn btn-sm btn-action" onclick="browserAction('scan')">🔍 SCAN PAGE</button>
+                            <button class="btn btn-sm btn-action" onclick="browserAction('exploit')">💣 EXPLOIT</button>
+                            <button class="btn btn-sm btn-action" onclick="browserAction('fingerprint')">🖐️ FINGERPRINT</button>
+                            <button class="btn btn-sm btn-action" onclick="browserAction('analyze')">🤖 AI ANALYZE</button>
                         </div>
                         <div class="browser-frame-wrap">
                             <div class="browser-loading" id="browserLoading">
                                 <span>🌐 Loading through proxy...</span>
                                 <span id="browserLoadingUrl"></span>
                             </div>
-                            <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms" src="about:blank"></iframe>
+                            <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" src="about:blank"></iframe>
                         </div>
                     </div>
 
@@ -91,6 +116,64 @@
                 </div>
             </div>
 
+            <!-- LOGS TAB -->
+            <div class="tab" id="tab-logs">
+                <div class="panel" style="flex:1; display:flex; flex-direction:column;">
+                    <div class="panel-header">📋 LIVE LOGS</div>
+                    <div class="logs-filter-bar">
+                        <button class="btn btn-sm log-filter active" data-filter="all" onclick="filterLogs('all')">ALL</button>
+                        <button class="btn btn-sm log-filter" data-filter="info" onclick="filterLogs('info')">INFO</button>
+                        <button class="btn btn-sm log-filter" data-filter="success" onclick="filterLogs('success')">SUCCESS</button>
+                        <button class="btn btn-sm log-filter" data-filter="warning" onclick="filterLogs('warning')">WARNING</button>
+                        <button class="btn btn-sm log-filter" data-filter="error" onclick="filterLogs('error')">ERROR</button>
+                        <button class="btn btn-sm log-filter" data-filter="system" onclick="filterLogs('system')">SYSTEM</button>
+                        <input type="text" id="logSearch" placeholder="Search logs..." oninput="filterLogs()" class="log-search-input">
+                    </div>
+                    <div class="panel-body logs-container" id="logsPanel">
+                        <div class="empty">No logs yet. Start a scan to see activity.</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SAFETY TAB -->
+            <div class="tab" id="tab-safety">
+                <div class="safety-grid">
+                    <div class="panel safety-status-panel">
+                        <div class="panel-header">🛡️ PROTECTION STATUS</div>
+                        <div class="panel-body" id="safetyStatusBody">
+                            <div class="safety-status-big" id="safetyStatusBig">
+                                <span class="safety-dot" id="safetyDot"></span>
+                                <span id="safetyStatusText">Checking...</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">🌍 IP INFORMATION</div>
+                        <div class="panel-body" id="safetyIpBody">
+                            <div class="safety-row"><span class="safety-label">Current Exit IP:</span><span class="safety-value mono" id="safetyCurrentIp">---</span></div>
+                            <div class="safety-row"><span class="safety-label">Real IP:</span><span class="safety-value mono" id="safetyRealIp">---</span></div>
+                            <div class="safety-row"><span class="safety-label">IP Match:</span><span class="safety-value" id="safetyIpMatch">---</span></div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">🔒 LAYER STATUS</div>
+                        <div class="panel-body" id="safetyLayersBody">
+                            <div class="safety-row"><span class="safety-label">Proxy:</span><span class="safety-value" id="safetyProxy">---</span></div>
+                            <div class="safety-row"><span class="safety-label">Tor:</span><span class="safety-value" id="safetyTor">---</span></div>
+                            <div class="safety-row"><span class="safety-label">VPN:</span><span class="safety-value" id="safetyVpn">---</span></div>
+                            <div class="safety-row"><span class="safety-label">DNS Leak:</span><span class="safety-value" id="safetyDns">---</span></div>
+                            <div class="safety-row"><span class="safety-label">WebRTC:</span><span class="safety-value" id="safetyWebrtc">---</span></div>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">⚠️ WARNINGS</div>
+                        <div class="panel-body" id="safetyWarningsBody">
+                            <div class="empty">No warnings</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- SETTINGS TAB -->
             <div class="tab" id="tab-settings">
                 <div class="settings-grid">
@@ -102,7 +185,7 @@
                             <label>Base URL</label>
                             <input type="text" id="setBaseUrl" placeholder="https://api.ollama.com/v1">
                             <label>Model</label>
-                            <input type="text" id="setModel" placeholder="deepseek-v4-pro">
+                            <input type="text" id="setModel" placeholder="qwen3.5">
                             <button class="btn btn-orange btn-sm" onclick="saveAiSettings()">💾 SAVE</button>
                             <button class="btn btn-sm" onclick="testAi()">🔌 TEST</button>
                         </div>
@@ -115,6 +198,7 @@
                             <label>Message</label>
                             <textarea id="setRansomMsg" placeholder="Your files have been encrypted..."></textarea>
                             <button class="btn btn-orange btn-sm" onclick="saveRansomSettings()">💾 SAVE</button>
+                            <button class="btn btn-sm" onclick="previewRansomware()">👁️ PREVIEW</button>
                         </div>
                     </div>
                     <div class="panel">
@@ -125,6 +209,7 @@
                             <label>Message</label>
                             <textarea id="setDefaceMsg" placeholder="Hacked by..."></textarea>
                             <button class="btn btn-orange btn-sm" onclick="saveDefaceSettings()">💾 SAVE</button>
+                            <button class="btn btn-sm" onclick="previewDeface()">👁️ PREVIEW</button>
                         </div>
                     </div>
                 </div>
@@ -133,6 +218,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/js/app.js?v=5"></script>
+    <script src="/static/js/app.js?v=6"></script>
 </body>
 </html>

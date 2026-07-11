@@ -310,7 +310,24 @@
             .catch(err => console.error('Preview failed:', err));
         }
         
+        // Load saved settings
+        function loadSavedSettings() {
+            var saved = localStorage.getItem('apex_ransom');
+            if (saved) {
+                try {
+                    var data = JSON.parse(saved);
+                    if (data.message) document.getElementById('noteMessage').value = data.message;
+                    if (data.image) {
+                        uploadedImageUrl = data.image;
+                        document.getElementById('imagePreview').src = data.image;
+                        document.getElementById('imagePreview').classList.add('show');
+                    }
+                } catch(e) {}
+            }
+        }
+        
         // Initial preview
+        loadSavedSettings();
         updatePreview();
     </script>
 </body>

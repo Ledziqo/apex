@@ -567,6 +567,36 @@ def api_ransomware_preview():
         file_count=data.get('file_count', ''), total_size=data.get('total_size', ''))
     return jsonify({'html': html})
 
+@app.route('/api/deface/preview', methods=['POST'])
+@login_required
+def api_deface_preview():
+    """Generate XSS deface preview HTML."""
+    data = request.get_json()
+    message = data.get('message', 'This site has been compromised.')
+    image_url = data.get('image_url', '')
+    target_url = data.get('target_url', 'https://example.com')
+    
+    html = f'''<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Hacked</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box;}}
+body{{background:#0a0a0a;color:#e5e5e5;font-family:'Courier New',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;}}
+.deface-card{{background:#0f0f0f;border:2px solid #f97316;padding:40px;max-width:600px;box-shadow:0 0 40px rgba(249,115,22,0.3);}}
+.deface-title{{font-size:36px;font-weight:900;color:#f97316;letter-spacing:6px;text-shadow:0 0 20px rgba(249,115,22,0.5);margin-bottom:20px;}}
+.deface-msg{{font-size:16px;color:#d4d4d4;line-height:1.8;margin-bottom:20px;white-space:pre-wrap;}}
+.deface-img{{max-width:300px;max-height:200px;border:2px solid #f97316;margin:20px auto;display:block;}}
+.deface-footer{{font-size:12px;color:#6b7280;margin-top:20px;}}
+.deface-url{{font-size:10px;color:#4a4d5a;margin-top:10px;}}
+</style></head><body><div class="deface-card">
+<div class="deface-title">🔺 HACKED</div>
+<div class="deface-msg">{message}</div>
+{('<img class="deface-img" src="' + image_url + '" alt="Deface">') if image_url else ''}
+<div class="deface-url">Target: {target_url}</div>
+<div class="deface-footer">APEX v3.0 // Security breach detected</div>
+</div></body></html>'''
+    
+    return jsonify({'html': html})
+
 @app.route('/api/ransomware/upload_image', methods=['POST'])
 @login_required
 def upload_ransomware_image():
@@ -1570,24 +1600,27 @@ def api_ai_chat():
     base_url = settings.get('base_url', Config.AI_BASE_URL)
     model = settings.get('model', Config.AI_MODEL)
     
-    if not api_key:
+    if not api_key or api_key == 'ollama':
         # Fallback: rule-based responses
         response = rule_based_ai(message, context)
         return jsonify({'response': response, 'source': 'local'})
     
     try:
+        # Normalize base_url - ensure it ends with /v1 if it's an ollama cloud URL
+        if 'ollama.com' in base_url and not base_url.rstrip('/').endswith('/v1'):
+            base_url = base_url.rstrip('/') + '/v1'
+        
         client = OpenAI(api_key=api_key, base_url=base_url)
         
         # Build system prompt with context
-        system_prompt = """You are APEX AI Co-Pilot, an offensive security assistant built for hackers. You help with:
+        system_prompt = """You are APEX AI Co-Pilot, an offensive security assistant. You help with:
 - Analyzing vulnerabilities and suggesting exploitation strategies
 - Generating payloads and attack chains
 - Explaining what exploits do and what to do next
 - Providing command-line examples and code snippets
 - Suggesting post-exploitation actions (persistence, lateral movement, data exfiltration)
-- Covering tracks and anti-forensics
 
-Be direct, technical, and practical. Use code blocks for commands and payloads. Think like a hacker helping another hacker."""
+Be direct, technical, and practical. Use code blocks for commands and payloads. Keep responses concise."""
         
         if context.get('vulnerabilities'):
             vuln_summary = json.dumps(context['vulnerabilities'][:10], indent=2)
@@ -1596,6 +1629,8 @@ Be direct, technical, and practical. Use code blocks for commands and payloads. 
         if context.get('exploitSteps'):
             steps_summary = json.dumps(context['exploitSteps'][-5:], indent=2)
             system_prompt += f"\n\nRecent exploit activity:\n{steps_summary}"
+        
+        print(f"[AI] Calling {model} at {base_url} with key: {api_key[:10]}...")
         
         response = client.chat.completions.create(
             model=model,
@@ -1607,13 +1642,40 @@ Be direct, technical, and practical. Use code blocks for commands and payloads. 
             temperature=Config.AI_TEMPERATURE
         )
         
-        reply = response.choices[0].message.content
+        reply = response.choices[0].message.content if response.choices else None
+        
+        # Handle empty/null responses
+        if not reply or not reply.strip():
+            print(f"[AI] Empty response from {model} — falling back to rule-based")
+            fallback = rule_based_ai(message, context)
+            return jsonify({
+                'response': fallback + f'\n\n[⚠️ {model} returned empty response. Check model name or API quota.]',
+                'source': 'fallback_empty',
+                'model': model
+            })
+        
+        print(f"[AI] Got response: {reply[:100]}...")
         return jsonify({'response': reply, 'source': 'ai', 'model': model})
     
     except Exception as e:
+        error_str = str(e)
+        print(f"[AI] Error: {error_str}")
         # Fallback to rule-based on error
-        response = rule_based_ai(message, context)
-        return jsonify({'response': response + f'\n\n[AI unavailable: {str(e)}]', 'source': 'fallback'})
+        fallback = rule_based_ai(message, context)
+        # Provide helpful error info
+        if '401' in error_str or 'Unauthorized' in error_str:
+            hint = 'Invalid API key. For Ollama cloud, get your key from ollama.com dashboard.'
+        elif '404' in error_str or 'not found' in error_str.lower():
+            hint = f'Model "{model}" not found. Check the model name is correct for this provider.'
+        elif 'connection' in error_str.lower() or 'timeout' in error_str.lower():
+            hint = f'Cannot reach {base_url}. Check your network/VPN connection.'
+        else:
+            hint = error_str
+        return jsonify({
+            'response': fallback + f'\n\n[⚠️ AI Error: {hint}]',
+            'source': 'fallback_error',
+            'error': error_str
+        })
 
 def rule_based_ai(message, context):
     """Local rule-based AI fallback when no API key is configured."""
