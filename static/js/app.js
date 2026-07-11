@@ -1305,7 +1305,7 @@ function runSensitiveFiles() {
         d.files.forEach(f => {
             const catColors = { git_exposure: 'var(--danger)', environment_file: 'var(--danger)', credential_file: 'var(--danger)', key_file: 'var(--danger)', config_file: 'var(--warning)', backup_file: 'var(--warning)', info_disclosure: 'var(--warning)', potential_backdoor: 'var(--danger)' };
             html += `<div style="padding:4px 8px;border-bottom:1px solid var(--border);font-size:10px;">
-                <span style="color:${catColors[f.category] || 'var(--text-muted')};">[${f.category}]</span>
+                <span style="color:${catColors[f.category] || 'var(--text-muted)'};">[${f.category}]</span>
                 <a href="${escapeHtml(f.url)}" target="_blank" style="color:var(--text-primary);margin-left:6px;">${escapeHtml(f.url)}</a>
                 <span style="color:var(--text-muted);margin-left:6px;">${f.status} ${f.size}B</span>
                 ${f.sensitive_content ? `<span style="color:var(--danger);margin-left:6px;">⚠️ ${f.sensitive_content}</span>` : ''}
