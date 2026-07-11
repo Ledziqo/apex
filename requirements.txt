@@ -6,7 +6,7 @@ beautifulsoup4==4.12.2
 colorama==0.4.6
 rich==13.7.0
 python-socketio==5.11.0
-eventlet==0.34.3
+gevent==24.2.1
 gunicorn==21.2.0
 lxml==5.0.0
 dnspython==2.4.2
