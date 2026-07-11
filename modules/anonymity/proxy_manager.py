@@ -71,5 +71,42 @@ class ProxyManager:
         """Disable kill switch"""
         self.kill_switch = False
 
-# Global instance
+    def check_proxy_health(self):
+        """Check health of all proxies and return status for each."""
+        results = []
+        healthy_count = 0
+        
+        for proxy in self.proxies[:10]:  # Check up to 10
+            status = self.check_proxy(proxy)
+            results.append({
+                'proxy': proxy[:50] + '...' if len(proxy) > 50 else proxy,
+                'healthy': status,
+                'response_time': status.get('response_time', 0) if status else 0
+            })
+            if status:
+                healthy_count += 1
+        
+        # Auto-rotate dead proxies out
+        if healthy_count < len(self.proxies):
+            self.proxies = [p for p in self.proxies if self.check_proxy(p)]
+        
+        return {
+            'total': len(self.proxies),
+            'healthy': healthy_count,
+            'dead': len(self.proxies) - healthy_count,
+            'proxies': results,
+            'auto_rotated': healthy_count < len(self.proxies)
+        }
+    
+    def rotate_proxy(self):
+        """Force rotate to a different proxy."""
+        if len(self.proxies) > 1:
+            current = self.active_proxy
+            available = [p for p in self.proxies if p != current]
+            if available:
+                self.active_proxy = random.choice(available)
+                return self.active_proxy
+        return None
+
+
 proxy_manager = ProxyManager()
