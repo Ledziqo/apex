@@ -3,7 +3,14 @@
 // Dashboard JavaScript
 // ============================================================
 
-const socket = io();
+var socket = null;
+try {
+    if (typeof io !== 'undefined') {
+        socket = io();
+    }
+} catch(e) {
+    console.warn('Socket.io not available, running in offline mode');
+}
 let currentScanId = null;
 let vulnerabilities = [];
 let selectedVulns = new Set();

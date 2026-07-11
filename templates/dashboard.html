@@ -260,30 +260,39 @@
         </div>
     </div>
     <div class="modal-overlay" id="modalOverlay"><div class="modal" id="modalContent"></div></div>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.5.4/socket.io.min.js"></script>
     <script src="/static/js/app.js"></script>
     <script>
-        const origAddFeed = addFeed;
-        addFeed = function(entry) {
-            origAddFeed(entry);
-            const feed2 = document.getElementById('liveFeed2');
-            if (feed2) {
-                if (feed2.querySelector('.empty-state')) feed2.innerHTML = '';
-                const div = document.createElement('div');
-                div.className = 'feed-line';
-                div.innerHTML = `<span class="ts">[${entry.timestamp}]</span><span class="lvl-${entry.level}">${escapeHtml(entry.message)}</span>`;
-                feed2.appendChild(div);
-                feed2.scrollTop = feed2.scrollHeight;
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof addFeed !== 'undefined') {
+                const origAddFeed = addFeed;
+                addFeed = function(entry) {
+                    origAddFeed(entry);
+                    const feed2 = document.getElementById('liveFeed2');
+                    if (feed2) {
+                        if (feed2.querySelector('.empty-state')) feed2.innerHTML = '';
+                        const div = document.createElement('div');
+                        div.className = 'feed-line';
+                        div.innerHTML = '<span class="ts">[' + (entry.timestamp || '') + ']</span><span class="lvl-' + (entry.level || 'info') + '">' + escapeHtml(entry.message || '') + '</span>';
+                        feed2.appendChild(div);
+                        feed2.scrollTop = feed2.scrollHeight;
+                    }
+                };
             }
-        };
-        setInterval(() => {
-            fetch('/api/history').then(r => r.json()).then(data => {
-                document.getElementById('bbTargets').textContent = data.length;
-                document.getElementById('bbVulns').textContent = data.reduce((s, h) => s + (h.vulns_found || 0), 0);
-                document.getElementById('bbExploits').textContent = data.reduce((s, h) => s + (h.exploits_success || 0), 0);
-            }).catch(() => {});
-        }, 10000);
-        socket.emit('request_feed');
+            setInterval(function() {
+                fetch('/api/history').then(function(r) { return r.json(); }).then(function(data) {
+                    var bbT = document.getElementById('bbTargets');
+                    var bbV = document.getElementById('bbVulns');
+                    var bbE = document.getElementById('bbExploits');
+                    if (bbT) bbT.textContent = data.length;
+                    if (bbV) bbV.textContent = data.reduce(function(s, h) { return s + (h.vulns_found || 0); }, 0);
+                    if (bbE) bbE.textContent = data.reduce(function(s, h) { return s + (h.exploits_success || 0); }, 0);
+                }).catch(function() {});
+            }, 10000);
+            if (typeof socket !== 'undefined') {
+                socket.emit('request_feed');
+            }
+        });
     </script>
 </body>
 </html>
