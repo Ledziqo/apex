@@ -1,7 +1,7 @@
 import os, sys, json, time, threading, re, socket, base64, sqlite3, random, string
 from datetime import datetime
 from urllib.parse import urljoin, urlparse, parse_qs, urlencode, urlunparse
-from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash, send_file, make_response
 from flask_socketio import SocketIO, emit
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required
 from config import Config
@@ -252,7 +252,11 @@ def toggle_vpn():
     try:
         from modules.anonymity.vpn_manager import vpn_manager
         if enabled:
-            # First check if Warp is connected
+            vpn_manager.enabled = True
+            Config.VPN_ENABLED = True
+            vpn_manager.original_ip = vpn_manager._get_public_ip()
+            
+            # Check if Warp is connected
             warp_connected = False
             try:
                 import subprocess
@@ -261,12 +265,6 @@ def toggle_vpn():
             except:
                 pass
             
-            # Check for any VPN interface
-            vpn_manager.enabled = True
-            Config.VPN_ENABLED = True
-            vpn_manager.original_ip = vpn_manager._get_public_ip()
-            
-            # Check if Warp is connected
             if warp_connected:
                 vpn_manager.interface = 'CloudflareWarp'
                 vpn_manager.current_ip = vpn_manager._get_public_ip()
@@ -279,7 +277,6 @@ def toggle_vpn():
                     emit_feed('system', f'🟡 Warp connected but IP unchanged. Check connection.', 'warning')
                     return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': False, 'reason': 'IP unchanged'})
             
-            # Check for any VPN interface
             if vpn_manager.is_vpn_active():
                 vpn_manager.current_ip = vpn_manager._get_public_ip()
                 protection = vpn_manager.verify_protection()
@@ -288,10 +285,9 @@ def toggle_vpn():
                     socketio.emit('vpn_status', protection)
                     return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
             
-            emit_feed('system', '🔴 VPN NOT DETECTED — No VPN interface or Warp found. Run: warp-cli connect', 'error')
-            Config.VPN_ENABLED = False
-            vpn_manager.enabled = False
-            return jsonify({'vpn_enabled': False, 'vpn_active': False, 'protected': False, 'reason': 'No VPN detected'})
+            # Always accept the toggle — show warning but don't revert
+            emit_feed('system', '🟡 VPN toggled ON but no VPN interface detected. Run: warp-cli connect', 'warning')
+            return jsonify({'vpn_enabled': True, 'vpn_active': False, 'protected': False, 'reason': 'No VPN detected, toggle accepted'})
         else:
             vpn_manager.disable()
             Config.VPN_ENABLED = False
@@ -2945,6 +2941,26 @@ def api_browser_proxy():
     if result.get('success'):
         emit_feed('browser', f'Page loaded: {url}', 'info')
     return jsonify(result)
+
+@app.route('/api/browser/view')
+@login_required
+def api_browser_view():
+    """Serve a proxied page directly so the iframe can load it via src= instead of srcdoc.
+    This allows JavaScript-heavy pages (like XSS game) to work properly."""
+    url = request.args.get('url', '')
+    if not url:
+        return '<html><body><h2>No URL specified</h2></body></html>', 400
+    
+    result = browser_proxy.fetch_page(url)
+    if result.get('success') and result.get('html'):
+        resp = make_response(result['html'])
+        resp.headers['Content-Type'] = 'text/html; charset=utf-8'
+        resp.headers['X-Frame-Options'] = 'SAMEORIGIN'
+        resp.headers['Content-Security-Policy'] = "frame-ancestors 'self' *;"
+        return resp
+    
+    error_msg = result.get('error', 'Failed to load page')
+    return f'<html><body style="background:#000;color:#e53935;font-family:monospace;padding:40px;text-align:center;"><h2>Failed to Load</h2><p>{error_msg}</p></body></html>', 502
 
 @app.route('/api/browser/search', methods=['POST'])
 @login_required

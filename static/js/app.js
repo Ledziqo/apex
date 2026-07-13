@@ -357,30 +357,42 @@ function loadBrowserUrl(url, andScan) {
     loading.classList.add('show');
     loadingUrl.textContent = url;
     
-    fetch('/api/browser/proxy', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: url })
-    }).then(function(r) { return r.json(); }).then(function(d) {
-        loading.classList.remove('show');
-        if (d.success && d.html) {
-            document.getElementById('browserFrame').srcdoc = d.html;
+    // Use direct src= loading for proper JS execution (XSS game etc.)
+    var frame = document.getElementById('browserFrame');
+    var viewUrl = '/api/browser/view?url=' + encodeURIComponent(url);
+    frame.src = viewUrl;
+    
+    // Poll for load completion
+    var loadCheck = setInterval(function() {
+        try {
+            if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
+                clearInterval(loadCheck);
+                loading.classList.remove('show');
+                updateBrowserStatus(true);
+                if (andScan) {
+                    document.getElementById('targetInput').value = url;
+                    startScan(url);
+                }
+                toast('Page loaded', 'success');
+            }
+        } catch(e) {
+            // Cross-origin restrictions - assume loaded after timeout
+            clearInterval(loadCheck);
+            loading.classList.remove('show');
             updateBrowserStatus(true);
             if (andScan) {
                 document.getElementById('targetInput').value = url;
                 startScan(url);
             }
             toast('Page loaded', 'success');
-        } else {
-            document.getElementById('browserFrame').srcdoc = '<html><body style="background:#000;color:#e53935;font-family:monospace;padding:40px;text-align:center;"><h2>Failed to Load</h2><p>' + escapeHtml(d.error || 'Unknown error') + '</p></body></html>';
-            updateBrowserStatus(false);
-            toast('Failed: ' + (d.error || 'Unknown'), 'error');
         }
-    }).catch(function(e) {
+    }, 500);
+    
+    // Safety timeout
+    setTimeout(function() {
+        clearInterval(loadCheck);
         loading.classList.remove('show');
-        updateBrowserStatus(false);
-        toast('Error: ' + e.message, 'error');
-    });
+    }, 15000);
 }
 
 function browserBack() {
