@@ -286,15 +286,24 @@ class OpSecManager:
         else:
             report['checks']['tor'] = {'name': 'Tor Routing', 'active': False, 'status': '⚫ Disabled', 'detail': 'Tor is not enabled'}
         
-        # Check Proxy
+        # Check Proxy - actually test it
+        proxy_active = False
         if Config.PROXY_ENABLED:
+            try:
+                test_resp = requests.get('https://httpbin.org/ip', 
+                    proxies={'http': 'socks5h://127.0.0.1:9050', 'https': 'socks5h://127.0.0.1:9050'} if Config.TOR_ENABLED else None,
+                    timeout=5)
+                proxy_active = test_resp.status_code == 200
+            except:
+                proxy_active = False
             report['checks']['proxy'] = {
                 'name': 'Proxy Chain',
-                'active': True,
-                'status': '🟢 Active',
-                'detail': 'HTTP/S requests routed through proxy list'
+                'active': proxy_active,
+                'status': '🟢 Active' if proxy_active else '🔴 Inactive',
+                'detail': 'HTTP/S requests routed through proxy list' if proxy_active else 'Proxy enabled but not verified working'
             }
-            report['layers'].append({'name': 'Proxy Chain', 'icon': '🔗', 'status': 'active'})
+            if proxy_active:
+                report['layers'].append({'name': 'Proxy Chain', 'icon': '🔗', 'status': 'active'})
         else:
             report['checks']['proxy'] = {'name': 'Proxy Chain', 'active': False, 'status': '⚫ Disabled', 'detail': 'No proxy configured'}
         

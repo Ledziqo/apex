@@ -809,7 +809,14 @@ def scan_xss(target_url, discovered):
     }
     generic_payloads = ['<script>alert("APEX")</script>','"><script>alert("APEX")</script>','<img src=x onerror=alert("APEX")>','"><img src=x onerror=alert("APEX")>','<svg onload=alert("APEX")>','"><svg onload=alert("APEX")>','<ScRiPt>alert("APEX")</ScRiPt>','%3Cscript%3Ealert(%22APEX%22)%3C/script%3E','" onmouseover="alert(\'APEX\')" x="','javascript:alert("APEX")']
     
-    for page in discovered['pages'][:10]:
+    # Also scan iframe src URLs if they exist in discovered endpoints
+    all_pages = list(discovered['pages'][:10])
+    if discovered.get('endpoints'):
+        for ep in discovered['endpoints']:
+            if ep not in all_pages and len(all_pages) < 15:
+                all_pages.append(ep)
+    
+    for page in all_pages:
         parsed = urlparse(page)
         if parsed.query:
             params = parse_qs(parsed.query)

@@ -38,7 +38,21 @@ class VPNManager:
         if not self.enabled:
             return False
 
-        # Method 1: Check if VPN interface exists (Linux)
+        # Method 1: Check for ANY VPN interface (tun, wg, warp, CloudflareWarp)
+        try:
+            result = subprocess.run(['ip', 'link', 'show'], capture_output=True, text=True, timeout=3)
+            interfaces = result.stdout.lower()
+            for vpn_iface in ['tun', 'wg', 'warp', 'cloudflare', 'utun']:
+                if vpn_iface in interfaces and 'UP' in result.stdout:
+                    # Found a VPN interface - extract its name
+                    for line in result.stdout.split('\n'):
+                        if vpn_iface in line.lower() and 'UP' in line:
+                            self.interface = line.split(':')[1].strip().split('@')[0].strip()
+                            return True
+        except:
+            pass
+
+        # Method 2: Check specific interface (Linux)
         try:
             result = subprocess.run(
                 ['ip', 'link', 'show', self.interface],
@@ -49,27 +63,27 @@ class VPNManager:
         except:
             pass
 
-        # Method 2: Check if VPN interface exists (Windows)
+        # Method 3: Check Warp CLI status
         try:
-            result = subprocess.run(
-                ['netsh', 'interface', 'show', 'interface', self.interface],
-                capture_output=True, text=True, timeout=3
-            )
-            if 'Connected' in result.stdout:
+            result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
+            if 'Connected' in result.stdout or 'connected' in result.stdout:
+                self.interface = 'CloudflareWarp'
                 return True
         except:
             pass
 
-        # Method 3: Check if tun0 exists in /sys (Linux)
-        if os.path.exists(f'/sys/class/net/{self.interface}'):
-            try:
-                with open(f'/sys/class/net/{self.interface}/operstate', 'r') as f:
-                    if f.read().strip() == 'up':
-                        return True
-            except:
-                pass
+        # Method 4: Check if any VPN interface exists in /sys (Linux)
+        for iface_name in ['tun0', 'wg0', 'warp', 'CloudflareWarp']:
+            if os.path.exists(f'/sys/class/net/{iface_name}'):
+                try:
+                    with open(f'/sys/class/net/{iface_name}/operstate', 'r') as f:
+                        if f.read().strip() == 'up':
+                            self.interface = iface_name
+                            return True
+                except:
+                    pass
 
-        # Method 4: Compare public IP before/after VPN
+        # Method 5: Compare public IP before/after VPN
         if self.original_ip and self.current_ip:
             if self.original_ip != self.current_ip:
                 return True

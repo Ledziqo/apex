@@ -90,9 +90,6 @@ class BrowserProxy:
             # Rewrite links to stay proxied
             html = self._rewrite_links(html, final_url)
 
-            # Inject APEX toolbar
-            html = self._inject_toolbar(html, final_url)
-
             # Extract page info for AI
             page_info = self._extract_page_info(html, final_url, r)
 
@@ -119,7 +116,6 @@ class BrowserProxy:
             try:
                 r = self.session.get(url, timeout=15, verify=False, allow_redirects=True)
                 html = self._rewrite_links(r.text, r.url)
-                html = self._inject_toolbar(html, r.url)
                 page_info = self._extract_page_info(html, r.url, r)
                 return {
                     'success': True,
@@ -172,98 +168,6 @@ class BrowserProxy:
                 # Keep original src for resources (they load directly)
 
         return str(soup)
-
-    def _inject_toolbar(self, html, url):
-        """Inject the APEX browser toolbar into the page."""
-        toolbar_css = """
-        <style>
-        #apex-browser-toolbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 999999;
-            background: linear-gradient(135deg, #0f1117, #151820);
-            border-bottom: 2px solid #f97316;
-            padding: 8px 16px;
-            display: flex; align-items: center; gap: 10px;
-            font-family: 'JetBrains Mono', 'Consolas', monospace;
-            font-size: 12px; color: #e2e4e9;
-            box-shadow: 0 2px 20px rgba(249,115,22,0.3);
-        }
-        #apex-browser-toolbar .apex-logo {
-            color: #f97316; font-weight: 900; font-size: 16px;
-            letter-spacing: 3px; margin-right: 10px;
-        }
-        #apex-browser-toolbar .apex-url {
-            flex: 1; background: #0d1114; border: 1px solid #252836;
-            border-radius: 4px; padding: 6px 10px; color: #10b981;
-            font-family: 'JetBrains Mono', monospace; font-size: 11px;
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-        }
-        #apex-browser-toolbar .apex-btn {
-            padding: 6px 12px; border: 1px solid #252836; border-radius: 4px;
-            cursor: pointer; font-size: 11px; font-weight: 600;
-            background: #1a1d28; color: #e2e4e9;
-            transition: all 0.2s; white-space: nowrap;
-        }
-        #apex-browser-toolbar .apex-btn:hover {
-            border-color: #f97316; color: #f97316;
-            background: rgba(249,115,22,0.1);
-        }
-        #apex-browser-toolbar .apex-btn.scan {
-            background: #f97316; color: #000; border-color: #f97316;
-            font-weight: 700;
-        }
-        #apex-browser-toolbar .apex-btn.scan:hover {
-            background: #ea580c; box-shadow: 0 0 16px rgba(249,115,22,0.3);
-        }
-        #apex-browser-toolbar .apex-btn.exploit {
-            background: #ef4444; color: #fff; border-color: #ef4444;
-            font-weight: 700;
-        }
-        #apex-browser-toolbar .apex-btn.exploit:hover {
-            background: #dc2626; box-shadow: 0 0 16px rgba(239,68,68,0.3);
-        }
-        #apex-browser-toolbar .apex-btn.ai {
-            background: #8b5cf6; color: #fff; border-color: #8b5cf6;
-        }
-        #apex-browser-toolbar .apex-status {
-            font-size: 10px; color: #5c6070;
-        }
-        body { margin-top: 50px !important; }
-        </style>
-        """
-
-        toolbar_html = f"""
-        <div id="apex-browser-toolbar">
-            <span class="apex-logo">🔺 APEX</span>
-            <span class="apex-url" title="{url}">{url[:80]}{'...' if len(url) > 80 else ''}</span>
-            <button class="apex-btn scan" onclick="window.parent.postMessage({{action:'apex_scan',url:'{url}'}},'*')">🔍 SCAN PAGE</button>
-            <button class="apex-btn exploit" onclick="window.parent.postMessage({{action:'apex_exploit',url:'{url}'}},'*')">💣 EXPLOIT</button>
-            <button class="apex-btn" onclick="window.parent.postMessage({{action:'apex_fingerprint',url:'{url}'}},'*')">🖐️ FINGERPRINT</button>
-            <button class="apex-btn ai" onclick="window.parent.postMessage({{action:'apex_ai_analyze',url:'{url}'}},'*')">🤖 AI ANALYZE</button>
-            <span class="apex-status">🟢 PROXIED</span>
-        </div>
-        <script>
-        function apexNavigate(url) {{
-            window.parent.postMessage({{action:'apex_navigate',url:url}}, '*');
-        }}
-        function apexSubmitForm(form, action) {{
-            window.parent.postMessage({{action:'apex_submit_form',url:action,formData:new FormData(form)}}, '*');
-        }}
-        </script>
-        """
-
-        # Inject before </head> or after <body>
-        if '</head>' in html:
-            html = html.replace('</head>', toolbar_css + '</head>')
-        else:
-            html = toolbar_css + html
-
-        if '<body' in html:
-            import re
-            html = re.sub(r'(<body[^>]*>)', r'\1' + toolbar_html, html, count=1)
-        else:
-            html = toolbar_html + html
-
-        return html
 
     def _extract_page_info(self, html, url, response):
         """Extract useful info from the page for AI analysis."""
