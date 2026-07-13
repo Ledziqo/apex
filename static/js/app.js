@@ -261,6 +261,9 @@ function toggleAnon(type) {
     var el = document.getElementById(type + 'Toggle');
     if (el) el.classList.toggle('active', newState);
     
+    // Always keep the toggle state — don't revert on errors
+    toast(type.toUpperCase() + ' ' + (newState ? 'ON' : 'OFF'), 'info');
+    
     fetch('/api/' + type + '/toggle', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -302,10 +305,9 @@ function toggleAnon(type) {
         }
         loadSafetyStatus();
     }).catch(function() {
-        toast(type.toUpperCase() + ' toggle failed', 'error');
+        // Toggle stays ON even if verification fails — user can still use it
+        toast('⚠️ ' + type.toUpperCase() + ' toggled ON but verification failed', 'warning');
     });
-    
-    toast(type.toUpperCase() + ' ' + (newState ? 'ON' : 'OFF'), 'info');
 }
 
 // ============================================================
@@ -357,10 +359,10 @@ function loadBrowserUrl(url, andScan) {
     loading.classList.add('show');
     loadingUrl.textContent = url;
     
-    // Use direct src= loading for proper JS execution (XSS game etc.)
+    // Load URL directly in iframe — no proxying needed.
+    // The iframe loads the real site in its own origin, so all JS/CSS/images work.
     var frame = document.getElementById('browserFrame');
-    var viewUrl = '/api/browser/view?url=' + encodeURIComponent(url);
-    frame.src = viewUrl;
+    frame.src = url;
     
     // Poll for load completion
     var loadCheck = setInterval(function() {
