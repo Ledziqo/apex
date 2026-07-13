@@ -833,7 +833,14 @@ def scan_xss(target_url, discovered):
     all_pages = list(discovered['pages'][:10])
     if discovered.get('endpoints'):
         for ep in discovered['endpoints']:
-            if ep not in all_pages and len
+            if ep not in all_pages:
+                all_pages.append(ep)
+    
+    for page in all_pages[:15]:
+        parsed = urlparse(page)
+        if parsed.query:
+            params = parse_qs(parsed.query)
+            for param in list(params.keys())[:5]:
                 ctx = find_reflection_context(sess, page, param)
                 if ctx and ctx.get('reflected'):
                     context = ctx.get('context', 'html_body')
