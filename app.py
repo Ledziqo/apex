@@ -252,35 +252,55 @@ def toggle_vpn():
     try:
         from modules.anonymity.vpn_manager import vpn_manager
         if enabled:
-            result = vpn_manager.enable()
-            Config.VPN_ENABLED = result
-            if result:
-                # Enable kill switch for maximum protection
-                ks_result = vpn_manager.enable_kill_switch()
-                # Start monitoring VPN connection
-                def on_vpn_drop():
-                    emit_feed('system', '🔴 VPN DROPPED! Kill switch activated — all traffic blocked', 'error')
-                    socketio.emit('vpn_status', {'protected': False, 'alert': 'VPN connection lost!'})
-                vpn_manager.monitor_connection(callback=on_vpn_drop)
-                
+            # First check if Warp is connected
+            warp_connected = False
+            try:
+                import subprocess
+                result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
+                warp_connected = 'Connected' in result.stdout
+            except:
+                pass
+            
+            # Check for any VPN interface
+            vpn_manager.enabled = True
+            Config.VPN_ENABLED = True
+            vpn_manager.original_ip = vpn_manager._get_public_ip()
+            
+            # Check if Warp is connected
+            if warp_connected:
+                vpn_manager.interface = 'CloudflareWarp'
+                vpn_manager.current_ip = vpn_manager._get_public_ip()
                 protection = vpn_manager.verify_protection()
                 if protection.get('protected'):
-                    emit_feed('system', f'🟢 VPN PROTECTED — IP: {vpn_manager.current_ip} (Kill Switch: ON)', 'success')
+                    emit_feed('system', f'🟢 VPN PROTECTED via Warp — IP: {vpn_manager.current_ip}', 'success')
+                    socketio.emit('vpn_status', protection)
+                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
                 else:
-                    emit_feed('system', f'🟡 VPN ENABLED — IP: {vpn_manager.current_ip} (Kill Switch: {"ON" if ks_result else "FAILED"})', 'warning')
-                socketio.emit('vpn_status', protection)
-            else:
-                emit_feed('system', '🔴 VPN NOT DETECTED — Toggle ON but no VPN interface found. Start your VPN first.', 'error')
+                    emit_feed('system', f'🟡 Warp connected but IP unchanged. Check connection.', 'warning')
+                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': False, 'reason': 'IP unchanged'})
+            
+            # Check for any VPN interface
+            if vpn_manager.is_vpn_active():
+                vpn_manager.current_ip = vpn_manager._get_public_ip()
+                protection = vpn_manager.verify_protection()
+                if protection.get('protected'):
+                    emit_feed('system', f'🟢 VPN PROTECTED — IP: {vpn_manager.current_ip}', 'success')
+                    socketio.emit('vpn_status', protection)
+                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
+            
+            emit_feed('system', '🔴 VPN NOT DETECTED — No VPN interface or Warp found. Run: warp-cli connect', 'error')
+            Config.VPN_ENABLED = False
+            vpn_manager.enabled = False
+            return jsonify({'vpn_enabled': False, 'vpn_active': False, 'protected': False, 'reason': 'No VPN detected'})
         else:
-            vpn_manager.disable_kill_switch()
             vpn_manager.disable()
             Config.VPN_ENABLED = False
-            emit_feed('system', 'VPN DISABLED — Kill switch removed, traffic unrestricted', 'info')
-            socketio.emit('vpn_status', {'protected': False})
-    except:
+            emit_feed('system', 'VPN DISABLED', 'info')
+            return jsonify({'vpn_enabled': False, 'vpn_active': False})
+    except Exception as e:
         Config.VPN_ENABLED = enabled
         emit_feed('system', f'VPN {"ENABLED" if Config.VPN_ENABLED else "DISABLED"}', 'info')
-    return jsonify({'vpn_enabled': Config.VPN_ENABLED, 'vpn_active': Config.VPN_ENABLED})
+        return jsonify({'vpn_enabled': Config.VPN_ENABLED, 'vpn_active': Config.VPN_ENABLED, 'error': str(e)})
 
 @app.route('/api/vpn/status', methods=['GET'])
 @login_required
@@ -813,14 +833,7 @@ def scan_xss(target_url, discovered):
     all_pages = list(discovered['pages'][:10])
     if discovered.get('endpoints'):
         for ep in discovered['endpoints']:
-            if ep not in all_pages and len(all_pages) < 15:
-                all_pages.append(ep)
-    
-    for page in all_pages:
-        parsed = urlparse(page)
-        if parsed.query:
-            params = parse_qs(parsed.query)
-            for param in list(params.keys())[:5]:
+            if ep not in all_pages and len
                 ctx = find_reflection_context(sess, page, param)
                 if ctx and ctx.get('reflected'):
                     context = ctx.get('context', 'html_body')

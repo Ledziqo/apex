@@ -87,9 +87,6 @@ class BrowserProxy:
 
             html = r.text
 
-            # Rewrite links to stay proxied
-            html = self._rewrite_links(html, final_url)
-
             # Extract page info for AI
             page_info = self._extract_page_info(html, final_url, r)
 
@@ -115,7 +112,7 @@ class BrowserProxy:
             # Try without SSL verification
             try:
                 r = self.session.get(url, timeout=15, verify=False, allow_redirects=True)
-                html = self._rewrite_links(r.text, r.url)
+                html = r.text
                 page_info = self._extract_page_info(html, r.url, r)
                 return {
                     'success': True,
@@ -136,38 +133,6 @@ class BrowserProxy:
 
         except Exception as e:
             return {'success': False, 'error': str(e), 'url': url}
-
-    def _rewrite_links(self, html, base_url):
-        """Rewrite all links to go through the proxy."""
-        soup = BeautifulSoup(html, 'html.parser')
-        parsed_base = urlparse(base_url)
-
-        # Rewrite <a href>
-        for tag in soup.find_all('a', href=True):
-            href = tag['href']
-            if not href.startswith(('#', 'javascript:', 'mailto:', 'tel:')):
-                absolute = urljoin(base_url, href)
-                tag['href'] = f"javascript:apexNavigate('{absolute}')"
-                tag['data-original-href'] = absolute
-
-        # Rewrite <form action>
-        for tag in soup.find_all('form', action=True):
-            action = tag['action']
-            if action and not action.startswith('#'):
-                absolute = urljoin(base_url, action)
-                tag['data-original-action'] = absolute
-                tag['action'] = '#'
-                tag['onsubmit'] = f"apexSubmitForm(this, '{absolute}'); return false;"
-
-        # Rewrite <img src>, <link href>, <script src>
-        for tag in soup.find_all(['img', 'script', 'link', 'iframe'], src=True):
-            src = tag['src']
-            if src and not src.startswith(('data:', '#')):
-                absolute = urljoin(base_url, src)
-                tag['data-original-src'] = absolute
-                # Keep original src for resources (they load directly)
-
-        return str(soup)
 
     def _extract_page_info(self, html, url, response):
         """Extract useful info from the page for AI analysis."""

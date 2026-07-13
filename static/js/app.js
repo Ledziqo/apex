@@ -59,6 +59,12 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load safety status
     loadSafetyStatus();
     setInterval(loadSafetyStatus, 30000);
+    // Load dashboard safety panel
+    loadDashSafety();
+    setInterval(loadDashSafety, 30000);
+    // Load dashboard live logs
+    loadDashLogs();
+    setInterval(loadDashLogs, 5000);
 });
 
 // ============================================================
@@ -854,6 +860,90 @@ function saveDefaceSettings() {
         body: JSON.stringify(data)
     });
     toast('Deface settings saved', 'success');
+}
+
+// ============================================================
+// DASHBOARD SAFETY PANEL
+// ============================================================
+function loadDashSafety() {
+    fetch('/api/opsec/full_report').then(function(r) { return r.json(); }).then(function(d) {
+        var checks = d.checks || {};
+        // VPN
+        var vpnEl = document.getElementById('dashSafetyVpn');
+        if (vpnEl) {
+            var vpnActive = checks.vpn && checks.vpn.active;
+            vpnEl.textContent = vpnActive ? '🟢 Active' : '🔴 Inactive';
+            vpnEl.style.color = vpnActive ? '#10b981' : '#ef4444';
+        }
+        // Tor
+        var torEl = document.getElementById('dashSafetyTor');
+        if (torEl) {
+            var torActive = checks.tor && checks.tor.active;
+            torEl.textContent = torActive ? '🟢 Active' : '🔴 Inactive';
+            torEl.style.color = torActive ? '#10b981' : '#ef4444';
+        }
+        // Proxy
+        var proxyEl = document.getElementById('dashSafetyProxy');
+        if (proxyEl) {
+            var proxyActive = checks.proxy && checks.proxy.active;
+            proxyEl.textContent = proxyActive ? '🟢 Active' : '🔴 Inactive';
+            proxyEl.style.color = proxyActive ? '#10b981' : '#ef4444';
+        }
+        // DNS
+        var dnsEl = document.getElementById('dashSafetyDns');
+        if (dnsEl) {
+            var dnsActive = checks.dns && checks.dns.active;
+            dnsEl.textContent = dnsActive ? '✅ Secure' : '🔴 Vulnerable';
+            dnsEl.style.color = dnsActive ? '#10b981' : '#ef4444';
+        }
+        // IP
+        var ipEl = document.getElementById('dashSafetyIp');
+        if (ipEl) ipEl.textContent = d.current_ip || 'Unknown';
+        // Overall status
+        var overallEl = document.getElementById('dashSafetyOverall');
+        if (overallEl) {
+            overallEl.textContent = d.status_text || '🔴 EXPOSED';
+            overallEl.style.color = d.status_color || '#ef4444';
+        }
+        // Badge
+        var badgeEl = document.getElementById('dashSafetyStatus');
+        if (badgeEl) {
+            var activeLayers = d.layers ? d.layers.length : 0;
+            badgeEl.textContent = activeLayers > 0 ? '🟢 ' + activeLayers + ' layer' + (activeLayers > 1 ? 's' : '') : '🔴 None';
+            badgeEl.style.color = activeLayers > 0 ? '#10b981' : '#ef4444';
+        }
+    }).catch(function() {
+        // Silently fail on dashboard
+    });
+}
+
+// ============================================================
+// DASHBOARD LIVE LOGS
+// ============================================================
+function loadDashLogs() {
+    var panel = document.getElementById('dashLogsPanel');
+    if (!panel) return;
+    
+    var countEl = document.getElementById('dashLogCount');
+    if (countEl) countEl.textContent = allLogs.length;
+    
+    if (allLogs.length === 0) {
+        panel.innerHTML = '<div class="empty">No logs yet. Start a scan to see activity.</div>';
+        return;
+    }
+    
+    var html = '';
+    allLogs.slice(-50).forEach(function(log) {
+        var levelClass = log.level || 'info';
+        var icon = { info: 'ℹ️', success: '✅', warning: '⚠️', error: '❌', system: '🔺' }[levelClass] || '•';
+        html += '<div class="log-entry log-' + levelClass + '">';
+        html += '<span class="log-time">' + (log.timestamp || '') + '</span>';
+        html += '<span class="log-icon">' + icon + '</span>';
+        html += '<span class="log-msg">' + escapeHtml(log.message || '') + '</span>';
+        html += '</div>';
+    });
+    panel.innerHTML = html;
+    panel.scrollTop = panel.scrollHeight;
 }
 
 // ============================================================

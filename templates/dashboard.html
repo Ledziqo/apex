@@ -92,6 +92,47 @@
                             <div class="empty">Enter a target and click SCAN</div>
                         </div>
                     </div>
+
+                    <!-- SAFETY STATUS PANEL (Dashboard) -->
+                    <div class="panel safety-dash-panel">
+                        <div class="panel-header">🛡️ SAFETY STATUS <span id="dashSafetyStatus"></span></div>
+                        <div class="panel-body" id="dashSafetyBody">
+                            <div class="safety-dash-grid">
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">VPN</span>
+                                    <span class="safety-dash-value" id="dashSafetyVpn">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">Tor</span>
+                                    <span class="safety-dash-value" id="dashSafetyTor">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">Proxy</span>
+                                    <span class="safety-dash-value" id="dashSafetyProxy">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">DNS</span>
+                                    <span class="safety-dash-value" id="dashSafetyDns">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">IP</span>
+                                    <span class="safety-dash-value mono" id="dashSafetyIp">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">Status</span>
+                                    <span class="safety-dash-value" id="dashSafetyOverall">---</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- LIVE LOGS PANEL (Dashboard) -->
+                    <div class="panel logs-dash-panel">
+                        <div class="panel-header">📋 LIVE LOGS <span id="dashLogCount">0</span></div>
+                        <div class="panel-body logs-dash-container" id="dashLogsPanel">
+                            <div class="empty">No logs yet. Start a scan to see activity.</div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- AI CHAT -->

@@ -318,6 +318,17 @@ class OpSecManager:
         if dns_enforcement['warning']:
             report['warnings'].append(dns_enforcement['warning'])
         
+        # Check WebRTC - real check based on active protection layers
+        webrtc_protected = vpn_active or tor_active or proxy_active
+        report['checks']['webrtc_leak'] = {
+            'name': 'WebRTC Leak Protection',
+            'active': webrtc_protected,
+            'status': '🟢 Protected' if webrtc_protected else '🔴 Vulnerable',
+            'detail': 'WebRTC routes through active anonymity layer' if webrtc_protected else 'No protection — WebRTC may leak real IP via STUN requests'
+        }
+        if not webrtc_protected:
+            report['warnings'].append('WebRTC may leak your real IP — enable VPN or Tor')
+        
         # Check UA Rotation
         report['checks']['ua_rotation'] = {
             'name': 'User-Agent Rotation',
