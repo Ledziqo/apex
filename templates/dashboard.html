@@ -12,15 +12,24 @@
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- PREVIEW MODAL -->
+    <!-- PREVIEW/EDITOR MODAL -->
     <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreviewModal()">
-        <div class="modal-content">
+        <div class="modal-content editor-modal">
             <div class="modal-header">
                 <span id="previewModalTitle">Preview</span>
-                <button class="modal-close" onclick="closePreviewModal()">✕</button>
+                <div class="modal-actions">
+                    <button class="btn btn-sm" id="previewEditBtn" onclick="togglePreviewEdit()">✏️ EDIT</button>
+                    <button class="btn btn-orange btn-sm" id="previewSaveBtn" onclick="savePreviewEdits()" style="display:none;">💾 SAVE</button>
+                    <button class="modal-close" onclick="closePreviewModal()">✕</button>
+                </div>
             </div>
-            <div class="modal-body">
-                <iframe id="previewModalFrame" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+            <div class="modal-body editor-body">
+                <div class="editor-pane" id="editorPane" style="display:none;">
+                    <div class="editor-fields" id="editorFields"></div>
+                </div>
+                <div class="preview-pane" id="previewPane">
+                    <iframe id="previewModalFrame" src="about:blank" sandbox="allow-scripts allow-same-origin"></iframe>
+                </div>
             </div>
         </div>
     </div>
