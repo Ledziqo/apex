@@ -326,15 +326,14 @@ function toggleAnon(type) {
             });
         }
         if (type === 'vpn') {
-            fetch('/api/vpn/verify').then(function(r){return r.json();}).then(function(v) {
-                if (newState && !v.protected) {
-                    toast('⚠️ VPN enabled but not protected', 'warning');
-                    addAiMsg('ai', '⚠️ VPN toggled ON but protection not verified. Check your VPN connection.');
-                } else if (newState) {
-                    toast('🟢 VPN protected', 'success');
-                    addAiMsg('ai', '🟢 VPN enabled and verified — your IP is hidden.');
-                }
-            });
+            // The toggle endpoint already verified Warp - trust its response
+            if (newState && d.protected) {
+                toast('🟢 VPN protected — ' + (d.current_ip || ''), 'success');
+                addAiMsg('ai', '🟢 VPN enabled and verified — your IP is hidden.');
+            } else if (newState && !d.protected) {
+                toast('⚠️ VPN toggled ON but ' + (d.reason || 'not verified'), 'warning');
+                addAiMsg('ai', '⚠️ VPN toggled ON but protection not verified. Run: warp-cli connect');
+            }
         }
         loadSafetyStatus();
     }).catch(function() {

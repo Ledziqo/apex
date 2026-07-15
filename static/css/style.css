@@ -126,8 +126,19 @@ html, body {
     background: var(--green);
 }
 
-.exit-link {
+.version-badge {
     margin-left: auto;
+    color: var(--orange);
+    font-size: 9px;
+    font-weight: 700;
+    font-family: var(--font);
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+}
+.exit-link {
+    margin-left: 4px;
     color: var(--text-muted);
     text-decoration: none;
     font-size: 10px;
