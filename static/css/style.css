@@ -1,5 +1,5 @@
 /* ============================================================
-   APEX — Black Theme
+   APEX — Red/Black Theme
    ============================================================ */
 
 :root {
@@ -8,9 +8,9 @@
     --bg-input: #0d0d0d;
     --border: #1a1a1a;
     --border-light: #252525;
-    --orange: #ff6600;
-    --orange-hover: #e55d00;
     --red: #e53935;
+    --red-hover: #c62828;
+    --red-glow: rgba(229,57,53,0.3);
     --green: #00c853;
     --text: #ffffff;
     --text-secondary: #999999;
@@ -49,7 +49,7 @@ html, body {
     border-bottom: none;
 }
 .scan-step-scanning {
-    color: var(--orange);
+    color: var(--red);
 }
 .scan-step-done {
     color: var(--green);
@@ -91,7 +91,7 @@ html, body {
     font-family: var(--font);
     font-size: 18px;
     font-weight: 700;
-    color: var(--orange);
+    color: var(--red);
     padding: 0 16px 20px;
     cursor: pointer;
     letter-spacing: 2px;
@@ -108,7 +108,7 @@ html, body {
 }
 
 .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
-.nav-item.active { color: var(--orange); border-left-color: var(--orange); background: rgba(255,102,0,0.05); }
+.nav-item.active { color: var(--red); border-left-color: var(--red); background: rgba(229,57,53,0.08); }
 
 .sidebar-bottom {
     margin-top: auto;
@@ -128,7 +128,7 @@ html, body {
 
 .version-badge {
     margin-left: auto;
-    color: var(--orange);
+    color: var(--red);
     font-size: 9px;
     font-weight: 700;
     font-family: var(--font);
@@ -179,7 +179,7 @@ html, body {
     outline: none;
     border-radius: 2px;
 }
-.target-input:focus { border-color: var(--orange); }
+.target-input:focus { border-color: var(--red); }
 
 .toggles {
     display: flex;
@@ -197,7 +197,7 @@ html, body {
     transition: all 0.15s;
 }
 .toggle:hover { border-color: var(--text-muted); }
-.toggle.active { background: var(--orange); color: #000; border-color: var(--orange); }
+.toggle.active { background: var(--red); color: #000; border-color: var(--red); }
 
 .scan-status { font-size: 10px; color: var(--text-muted); }
 
@@ -219,10 +219,8 @@ html, body {
 }
 .btn:hover { border-color: var(--text-muted); }
 .btn-sm { padding: 5px 10px; font-size: 10px; }
-.btn-orange { background: var(--orange); color: #000; border-color: var(--orange); }
-.btn-orange:hover { background: var(--orange-hover); }
 .btn-red { background: var(--red); color: #fff; border-color: var(--red); }
-.btn-red:hover { background: #c62828; }
+.btn-red:hover { background: var(--red-hover); }
 
 /* ============================================================
    TABS
@@ -300,7 +298,7 @@ html, body {
     outline: none;
     border-radius: 2px;
 }
-.browser-controls input:focus { border-color: var(--orange); }
+.browser-controls input:focus { border-color: var(--red); }
 
 .browser-frame-wrap {
     flex: 1;
@@ -327,7 +325,7 @@ html, body {
     gap: 8px;
     font-family: var(--font);
     font-size: 12px;
-    color: var(--orange);
+    color: var(--red);
 }
 .browser-loading.show { display: flex; }
 
@@ -345,8 +343,8 @@ html, body {
 .vuln-item:hover { background: rgba(255,255,255,0.02); }
 .vuln-item .sev { display: inline-block; padding: 2px 6px; border-radius: 2px; font-size: 9px; font-weight: 700; margin-right: 8px; }
 .vuln-item .sev.critical { background: var(--red); color: #fff; }
-.vuln-item .sev.high { background: var(--orange); color: #000; }
-.vuln-item .sev.medium { background: #ff9800; color: #000; }
+.vuln-item .sev.high { background: #c62828; color: #fff; }
+.vuln-item .sev.medium { background: #e53935; color: #fff; }
 .vuln-item .sev.low { background: var(--green); color: #000; }
 .vuln-item .type { font-weight: 600; margin-right: 8px; }
 .vuln-item .endpoint { color: var(--text-muted); font-family: var(--font); font-size: 10px; }
@@ -372,7 +370,7 @@ html, body {
 }
 
 .ai-msg { margin-bottom: 6px; }
-.ai-msg.user { color: var(--orange); }
+.ai-msg.user { color: var(--red); }
 .ai-msg.ai { color: var(--text-secondary); }
 
 .ai-input-row {
@@ -394,7 +392,7 @@ html, body {
     resize: none;
     border-radius: 2px;
 }
-.ai-input-row textarea:focus { border-color: var(--orange); }
+.ai-input-row textarea:focus { border-color: var(--red); }
 
 /* ============================================================
    HISTORY
@@ -455,7 +453,7 @@ html, body {
     border-radius: 2px;
 }
 .settings-grid input:focus,
-.settings-grid textarea:focus { border-color: var(--orange); }
+.settings-grid textarea:focus { border-color: var(--red); }
 
 .settings-grid textarea { height: 80px; resize: vertical; }
 
@@ -522,9 +520,9 @@ html, body {
     border-radius: 2px;
 }
 .btn-action:hover {
-    border-color: var(--orange);
-    color: var(--orange);
-    background: rgba(255,102,0,0.05);
+    border-color: var(--red);
+    color: var(--red);
+    background: rgba(229,57,53,0.08);
 }
 
 .browser-nav-btn {
@@ -559,8 +557,8 @@ html, body {
     margin-right: 2px;
 }
 .sev-badge.crit { background: var(--red); color: #fff; }
-.sev-badge.high { background: var(--orange); color: #000; }
-.sev-badge.med { background: #ff9800; color: #000; }
+.sev-badge.high { background: #c62828; color: #fff; }
+.sev-badge.med { background: #e53935; color: #fff; }
 .sev-badge.low { background: var(--green); color: #000; }
 
 /* ============================================================
@@ -588,7 +586,7 @@ html, body {
     transition: all 0.15s;
 }
 .log-filter:hover { border-color: var(--text-muted); color: var(--text); }
-.log-filter.active { background: var(--orange); color: #000; border-color: var(--orange); }
+.log-filter.active { background: var(--red); color: #000; border-color: var(--red); }
 
 .log-search-input {
     margin-left: auto;
@@ -602,7 +600,7 @@ html, body {
     border-radius: 2px;
     width: 180px;
 }
-.log-search-input:focus { border-color: var(--orange); }
+.log-search-input:focus { border-color: var(--red); }
 
 .logs-container {
     font-family: var(--font);
@@ -627,7 +625,7 @@ html, body {
 .log-success .log-msg { color: var(--green); }
 .log-warning .log-msg { color: #ff9800; }
 .log-error .log-msg { color: var(--red); }
-.log-system .log-msg { color: var(--orange); }
+.log-system .log-msg { color: var(--red); }
 
 /* ============================================================
    SAFETY TAB
@@ -707,13 +705,13 @@ html, body {
 
 .modal-content {
     background: var(--bg-panel);
-    border: 1px solid var(--orange);
+    border: 1px solid var(--red);
     width: 90vw;
     max-width: 800px;
     height: 85vh;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 0 40px rgba(255,102,0,0.2);
+    box-shadow: 0 0 40px rgba(229,57,53,0.2);
 }
 
 .modal-header {
@@ -724,7 +722,7 @@ html, body {
     border-bottom: 1px solid var(--border);
     font-size: 13px;
     font-weight: 700;
-    color: var(--orange);
+    color: var(--red);
     letter-spacing: 1px;
 }
 
@@ -757,7 +755,7 @@ html, body {
 .toast-success { border-left: 3px solid var(--green); }
 .toast-error { border-left: 3px solid var(--red); }
 .toast-warning { border-left: 3px solid #ff9800; }
-.toast-info { border-left: 3px solid var(--orange); }
+.toast-info { border-left: 3px solid var(--red); }
 
 /* ============================================================
    DASHBOARD SAFETY PANEL
@@ -826,4 +824,66 @@ html, body {
 
 .logs-dash-container .log-msg {
     color: var(--text-secondary);
+}
+
+/* ============================================================
+   EDITOR MODAL
+   ============================================================ */
+.editor-modal {
+    max-width: 1000px;
+}
+
+.editor-body {
+    display: flex;
+    flex-direction: row;
+    overflow: hidden;
+}
+
+.editor-pane {
+    width: 40%;
+    overflow-y: auto;
+    padding: 16px;
+    border-right: 1px solid var(--border);
+    background: var(--bg-input);
+}
+
+.editor-pane label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin: 10px 0 4px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.editor-pane input,
+.editor-pane textarea {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    font-family: var(--font);
+    font-size: 11px;
+    outline: none;
+    border-radius: 2px;
+    margin-bottom: 4px;
+}
+.editor-pane input:focus,
+.editor-pane textarea:focus { border-color: var(--red); }
+
+.editor-pane textarea {
+    resize: vertical;
+    min-height: 60px;
+}
+
+.preview-pane {
+    flex: 1;
+    overflow: hidden;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }

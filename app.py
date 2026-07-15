@@ -673,10 +673,10 @@ def api_deface_preview():
 <style>
 *{{margin:0;padding:0;box-sizing:border-box;}}
 body{{background:#0a0a0a;color:#e5e5e5;font-family:'Courier New',monospace;display:flex;align-items:center;justify-content:center;min-height:100vh;text-align:center;}}
-.deface-card{{background:#0f0f0f;border:2px solid #f97316;padding:40px;max-width:600px;box-shadow:0 0 40px rgba(249,115,22,0.3);}}
-.deface-title{{font-size:36px;font-weight:900;color:#f97316;letter-spacing:6px;text-shadow:0 0 20px rgba(249,115,22,0.5);margin-bottom:20px;}}
+.deface-card{{background:#0f0f0f;border:2px solid #e53935;padding:40px;max-width:600px;box-shadow:0 0 40px rgba(229,57,53,0.3);}}
+.deface-title{{font-size:36px;font-weight:900;color:#e53935;letter-spacing:6px;text-shadow:0 0 20px rgba(229,57,53,0.5);margin-bottom:20px;}}
 .deface-msg{{font-size:16px;color:#d4d4d4;line-height:1.8;margin-bottom:20px;white-space:pre-wrap;}}
-.deface-img{{max-width:300px;max-height:200px;border:2px solid #f97316;margin:20px auto;display:block;}}
+.deface-img{{max-width:300px;max-height:200px;border:2px solid #e53935;margin:20px auto;display:block;}}
 .deface-footer{{font-size:12px;color:#6b7280;margin-top:20px;}}
 .deface-url{{font-size:10px;color:#4a4d5a;margin-top:10px;}}
 </style></head><body><div class="deface-card">

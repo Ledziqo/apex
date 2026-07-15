@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>APEX v3.0 — Arsenal</title>
+    <title>APEX v3.0</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --orange: #f97316;
-            --orange-hover: #ea580c;
-            --orange-glow: rgba(249,115,22,0.3);
-            --bg: #0f1117;
-            --bg-card: #151820;
-            --border: #252836;
-            --text: #e2e4e9;
-            --text-muted: #5c6070;
+            --red: #e53935;
+            --red-hover: #c62828;
+            --red-glow: rgba(229,57,53,0.3);
+            --bg: #000000;
+            --bg-card: #0a0a0a;
+            --border: #1a1a1a;
+            --text: #ffffff;
+            --text-muted: #666666;
             --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
@@ -37,107 +37,16 @@
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 0;
-            opacity: 0.15;
+            opacity: 0.12;
             pointer-events: none;
-        }
-        /* Subtle grid background */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background:
-                linear-gradient(rgba(249,115,22,0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(249,115,22,0.02) 1px, transparent 1px);
-            background-size: 60px 60px;
-            pointer-events: none;
-            z-index: 0;
         }
         .container {
             position: relative;
             z-index: 1;
             text-align: center;
             padding: 40px 24px;
-            max-width: 480px;
+            max-width: 420px;
             width: 100%;
-        }
-        /* Logo with glow pulse */
-        .logo-wrap {
-            position: relative;
-            display: inline-block;
-        }
-        .logo {
-            font-family: var(--font-mono);
-            font-size: 72px;
-            font-weight: 900;
-            letter-spacing: 16px;
-            color: var(--orange);
-            text-shadow: 0 0 40px var(--orange-glow), 0 0 80px var(--orange-glow), 0 0 120px rgba(249,115,22,0.15);
-            line-height: 1;
-            position: relative;
-            display: inline-block;
-            animation: logoPulse 2s ease-in-out infinite;
-        }
-        @keyframes logoPulse {
-            0%, 100% { text-shadow: 0 0 40px var(--orange-glow), 0 0 80px var(--orange-glow); }
-            50% { text-shadow: 0 0 60px var(--orange-glow), 0 0 120px var(--orange-glow), 0 0 180px rgba(249,115,22,0.2); }
-        }
-        .logo-sub {
-            font-family: var(--font-mono);
-            font-size: 10px;
-            letter-spacing: 6px;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            margin-top: 6px;
-        }
-        .divider {
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, var(--orange), transparent);
-            margin: 28px 0;
-            opacity: 0.5;
-        }
-        /* Terminal typing effect */
-        .terminal-lines {
-            text-align: left;
-            font-family: var(--font-mono);
-            font-size: 11px;
-            line-height: 1.8;
-            color: var(--text-muted);
-            margin-bottom: 20px;
-            padding: 0 10px;
-            min-height: 60px;
-        }
-        .terminal-lines .t-green { color: #10b981; }
-        .terminal-lines .t-orange { color: var(--orange); }
-        .terminal-lines .t-dim { color: var(--text-muted); }
-        .terminal-lines .cursor { 
-            animation: blink 1s infinite; 
-            color: var(--orange);
-            font-weight: 700;
-        }
-        @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
-        /* Stats */
-        .stats-row {
-            display: flex;
-            justify-content: center;
-            gap: 30px;
-            margin: 20px 0;
-            flex-wrap: wrap;
-        }
-        .stat-item { text-align: center; min-width: 80px; }
-        .stat-num {
-            font-family: var(--font-mono);
-            font-size: 26px;
-            font-weight: 800;
-            color: var(--orange);
-            display: block;
-        }
-        .stat-label {
-            font-size: 9px;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            font-weight: 600;
         }
         /* Login card */
         .login-card {
@@ -152,14 +61,14 @@
             position: absolute;
             top: -1px; left: 20%; right: 20%;
             height: 1px;
-            background: var(--orange);
-            box-shadow: 0 0 12px var(--orange-glow);
+            background: var(--red);
+            box-shadow: 0 0 12px var(--red-glow);
         }
         .login-card input {
             width: 100%;
             padding: 12px 14px;
             margin-bottom: 10px;
-            background: #0d1114;
+            background: #0d0d0d;
             border: 1px solid var(--border);
             border-radius: 6px;
             color: var(--text);
@@ -170,14 +79,14 @@
             transition: border-color 0.2s, box-shadow 0.2s;
         }
         .login-card input:focus {
-            border-color: var(--orange);
-            box-shadow: 0 0 0 3px rgba(249,115,22,0.1);
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px rgba(229,57,53,0.1);
         }
         .login-card input::placeholder { color: #3a3d4a; }
         .login-btn {
             width: 100%;
             padding: 13px;
-            background: var(--orange);
+            background: var(--red);
             border: none;
             border-radius: 6px;
             color: #000;
@@ -190,8 +99,8 @@
             text-transform: uppercase;
         }
         .login-btn:hover {
-            background: var(--orange-hover);
-            box-shadow: 0 0 24px var(--orange-glow);
+            background: var(--red-hover);
+            box-shadow: 0 0 24px var(--red-glow);
             letter-spacing: 5px;
         }
         .flash-error {
@@ -205,34 +114,9 @@
             font-weight: 600;
             letter-spacing: 1px;
         }
-        .footer-text {
-            font-size: 9px;
-            color: var(--text-muted);
-            letter-spacing: 2px;
-            margin-top: 20px;
-            text-transform: uppercase;
-            opacity: 0.6;
-        }
-        .version-badge {
-            display: inline-block;
-            background: rgba(249,115,22,0.15);
-            border: 1px solid rgba(249,115,22,0.3);
-            color: var(--orange);
-            padding: 3px 10px;
-            border-radius: 4px;
-            font-size: 9px;
-            font-weight: 700;
-            letter-spacing: 2px;
-            margin-top: 8px;
-        }
         @media (max-width: 500px) {
-            .logo { font-size: 48px; letter-spacing: 10px; }
-            .logo-sub { font-size: 8px; letter-spacing: 4px; }
-            .stats-row { gap: 16px; }
-            .stat-num { font-size: 20px; }
             .login-card { padding: 20px 16px; }
             .login-btn { font-size: 12px; letter-spacing: 2px; }
-            .terminal-lines { font-size: 10px; }
         }
     </style>
 </head>
@@ -241,37 +125,6 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="container">
-        <div class="logo-wrap">
-            <div class="logo">APEX</div>
-        </div>
-        <div class="logo-sub">// no escape // no backup // no mercy</div>
-        <div class="version-badge">v3.0</div>
-
-        <div class="divider"></div>
-
-        <div class="terminal-lines" id="terminalLines">
-            <span class="t-green">> arsenal.init()</span><span class="cursor">_</span>
-        </div>
-
-        <div class="divider"></div>
-
-        <div class="stats-row">
-            <div class="stat-item">
-                <span class="stat-num" id="count1">0</span>
-                <span class="stat-label">Targets</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-num" id="count2">0</span>
-                <span class="stat-label">Breaches</span>
-            </div>
-            <div class="stat-item">
-                <span class="stat-num">100%</span>
-                <span class="stat-label">Success</span>
-            </div>
-        </div>
-
-        <div class="divider"></div>
-
         <div class="login-card">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -283,11 +136,9 @@
             <form method="POST" action="/login">
                 <input type="text" name="email" placeholder="IDENTIFIER" required autocomplete="off" aria-label="Email">
                 <input type="password" name="password" placeholder="ACCESS KEY" required aria-label="Password">
-                <button type="submit" class="login-btn">ACCESS ARSENAL</button>
+                <button type="submit" class="login-btn">ENTER</button>
             </form>
         </div>
-
-        <div class="footer-text">UNAUTHORIZED ACCESS WILL BE LOGGED AND TRACED</div>
     </div>
 
     <script>
@@ -310,10 +161,10 @@
         }
         
         function drawMatrix() {
-            ctx.fillStyle = 'rgba(15, 17, 23, 0.05)';
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = '#f97316';
+            ctx.fillStyle = '#e53935';
             ctx.font = fontSize + 'px "JetBrains Mono", monospace';
             
             for (let i = 0; i < drops.length; i++) {
@@ -321,9 +172,8 @@
                 const x = i * fontSize;
                 const y = drops[i] * fontSize;
                 
-                // Vary opacity for depth effect
                 const opacity = Math.random() * 0.5 + 0.3;
-                ctx.fillStyle = `rgba(249, 115, 22, ${opacity})`;
+                ctx.fillStyle = `rgba(229, 57, 53, ${opacity})`;
                 ctx.fillText(char, x, y);
                 
                 if (y > canvas.height && Math.random() > 0.975) {
@@ -339,79 +189,6 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
-
-        // ============================================================
-        // TERMINAL TYPING EFFECT
-        // ============================================================
-        const terminalLines = [
-            { text: '> arsenal.init()', cls: 't-green', delay: 800 },
-            { text: '> loading modules...', cls: 't-dim', delay: 600 },
-            { text: '> scan, exploit, c2, ransomware, bruteforce, phishing, cloud, creds', cls: 't-dim', delay: 400 },
-            { text: '> polymorphic engine online', cls: 't-orange', delay: 500 },
-            { text: '> stealth traffic enabled', cls: 't-orange', delay: 400 },
-            { text: '> defense evasion active', cls: 't-orange', delay: 400 },
-            { text: '> nuke engine armed', cls: 't-orange', delay: 500 },
-            { text: '> 19 scanners loaded', cls: 't-green', delay: 400 },
-            { text: '> AI strategist ready', cls: 't-green', delay: 400 },
-            { text: '> awaiting.operator', cls: 't-orange', delay: 0 },
-        ];
-        
-        const terminalEl = document.getElementById('terminalLines');
-        let lineIndex = 0;
-        
-        function typeLine() {
-            if (lineIndex >= terminalLines.length) {
-                // Loop back to first line after a pause
-                setTimeout(() => {
-                    terminalEl.innerHTML = '<span class="t-green">> arsenal.init()</span><span class="cursor">_</span>';
-                    lineIndex = 1;
-                    setTimeout(typeLine, 2000);
-                }, 5000);
-                return;
-            }
-            
-            const line = terminalLines[lineIndex];
-            const span = document.createElement('span');
-            span.className = line.cls;
-            span.textContent = line.text;
-            
-            // Remove cursor from previous line
-            const prevCursor = terminalEl.querySelector('.cursor');
-            if (prevCursor) prevCursor.remove();
-            
-            terminalEl.appendChild(span);
-            terminalEl.appendChild(document.createElement('br'));
-            
-            // Add cursor
-            const cursor = document.createElement('span');
-            cursor.className = 'cursor';
-            cursor.textContent = '_';
-            terminalEl.appendChild(cursor);
-            
-            lineIndex++;
-            
-            if (line.delay > 0) {
-                setTimeout(typeLine, line.delay);
-            }
-        }
-        
-        // Start typing after a short delay
-        setTimeout(typeLine, 1500);
-
-        // ============================================================
-        // COUNTER ANIMATION
-        // ============================================================
-        function animateCounter(id, target) {
-            let current = 0;
-            const el = document.getElementById(id);
-            const interval = setInterval(() => {
-                current += Math.ceil(target / 50);
-                if (current >= target) { current = target; clearInterval(interval); }
-                el.textContent = current.toLocaleString();
-            }, 40);
-        }
-        animateCounter('count1', 12847);
-        animateCounter('count2', 9631);
     </script>
 </body>
 </html>
