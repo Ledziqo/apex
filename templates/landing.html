@@ -37,7 +37,7 @@
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
             z-index: 0;
-            opacity: 0.12;
+            opacity: 0.4;
             pointer-events: none;
         }
         .container {
@@ -152,7 +152,7 @@
         canvas.height = window.innerHeight;
         
         const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>/{}[]|\\^~';
-        const fontSize = 14;
+        const fontSize = 16;
         const columns = Math.floor(canvas.width / fontSize);
         const drops = [];
         
@@ -164,16 +164,16 @@
             ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            ctx.fillStyle = '#e53935';
-            ctx.font = fontSize + 'px "JetBrains Mono", monospace';
-            
             for (let i = 0; i < drops.length; i++) {
                 const char = matrixChars[Math.floor(Math.random() * matrixChars.length)];
                 const x = i * fontSize;
                 const y = drops[i] * fontSize;
                 
-                const opacity = Math.random() * 0.5 + 0.3;
-                ctx.fillStyle = `rgba(229, 57, 53, ${opacity})`;
+                // Brighter at top, dimmer at bottom
+                const brightness = 1 - (y / canvas.height) * 0.5;
+                const opacity = Math.random() * 0.3 + 0.5;
+                ctx.fillStyle = `rgba(229, 57, 53, ${opacity * brightness})`;
+                ctx.font = fontSize + 'px "JetBrains Mono", monospace';
                 ctx.fillText(char, x, y);
                 
                 if (y > canvas.height && Math.random() > 0.975) {
