@@ -909,6 +909,53 @@ function saveDefaceSettings() {
 }
 
 // ============================================================
+// PROXY SETTINGS
+// ============================================================
+function loadProxySettings() {
+    fetch('/api/proxy/health').then(function(r) { return r.json(); }).then(function(d) {
+        var statsEl = document.getElementById('proxyStats');
+        if (statsEl) {
+            statsEl.textContent = 'Total: ' + (d.total || 0) + ' | Healthy: ' + (d.healthy || 0) + ' | Dead: ' + (d.dead || 0);
+            statsEl.style.color = (d.healthy || 0) > 0 ? '#10b981' : '#ef4444';
+        }
+    }).catch(function() {});
+}
+
+function saveProxySettings() {
+    var proxyFile = document.getElementById('setProxyFile').value.trim() || 'data/proxies.txt';
+    var proxyList = document.getElementById('setProxyList').value.trim();
+    
+    fetch('/api/proxy/settings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxy_file: proxyFile, proxy_list: proxyList })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) {
+            toast('Proxy settings saved — ' + (d.count || 0) + ' proxies loaded', 'success');
+            loadProxySettings();
+        } else {
+            toast('Error: ' + (d.error || 'Unknown'), 'error');
+        }
+    }).catch(function() {
+        toast('Failed to save proxy settings', 'error');
+    });
+}
+
+function testProxies() {
+    toast('Testing proxies...', 'info');
+    fetch('/api/proxy/health').then(function(r) { return r.json(); }).then(function(d) {
+        var statsEl = document.getElementById('proxyStats');
+        if (statsEl) {
+            statsEl.textContent = 'Total: ' + (d.total || 0) + ' | Healthy: ' + (d.healthy || 0) + ' | Dead: ' + (d.dead || 0);
+            statsEl.style.color = (d.healthy || 0) > 0 ? '#10b981' : '#ef4444';
+        }
+        toast('Proxy test complete — ' + (d.healthy || 0) + ' working', d.healthy > 0 ? 'success' : 'warning');
+    }).catch(function() {
+        toast('Proxy test failed', 'error');
+    });
+}
+
+// ============================================================
 // DASHBOARD SAFETY PANEL
 // ============================================================
 function loadDashSafety() {
@@ -942,9 +989,12 @@ function loadDashSafety() {
             dnsEl.textContent = dnsActive ? '✅ Secure' : '🔴 Vulnerable';
             dnsEl.style.color = dnsActive ? '#10b981' : '#ef4444';
         }
-        // IP
+        // Hidden IP (exit IP)
         var ipEl = document.getElementById('dashSafetyIp');
         if (ipEl) ipEl.textContent = d.current_ip || 'Unknown';
+        // Real IP
+        var realIpEl = document.getElementById('dashSafetyRealIp');
+        if (realIpEl) realIpEl.textContent = d.real_ip || 'Unknown';
         // Overall status
         var overallEl = document.getElementById('dashSafetyOverall');
         if (overallEl) {

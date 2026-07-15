@@ -116,8 +116,12 @@
                                     <span class="safety-dash-value" id="dashSafetyDns">---</span>
                                 </div>
                                 <div class="safety-dash-item">
-                                    <span class="safety-dash-label">IP</span>
+                                    <span class="safety-dash-label">Hidden IP</span>
                                     <span class="safety-dash-value mono" id="dashSafetyIp">---</span>
+                                </div>
+                                <div class="safety-dash-item">
+                                    <span class="safety-dash-label">Real IP</span>
+                                    <span class="safety-dash-value mono" id="dashSafetyRealIp">---</span>
                                 </div>
                                 <div class="safety-dash-item">
                                     <span class="safety-dash-label">Status</span>
@@ -252,6 +256,18 @@
                             <textarea id="setDefaceMsg" placeholder="Hacked by..."></textarea>
                             <button class="btn btn-orange btn-sm" onclick="saveDefaceSettings()">💾 SAVE</button>
                             <button class="btn btn-sm" onclick="previewDeface()">👁️ PREVIEW</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">🔗 PROXY SETTINGS</div>
+                        <div class="panel-body">
+                            <label>Proxy List File</label>
+                            <input type="text" id="setProxyFile" placeholder="data/proxies.txt">
+                            <label>Proxy List (one per line)</label>
+                            <textarea id="setProxyList" placeholder="socks5://user:pass@127.0.0.1:1080&#10;socks5://127.0.0.1:9050&#10;http://user:pass@proxy.example.com:8080" rows="4"></textarea>
+                            <div class="proxy-stats" id="proxyStats" style="font-size:12px;color:#6b7280;margin:8px 0;"></div>
+                            <button class="btn btn-orange btn-sm" onclick="saveProxySettings()">💾 SAVE & TEST</button>
+                            <button class="btn btn-sm" onclick="testProxies()">🔌 TEST ALL</button>
                         </div>
                     </div>
                 </div>

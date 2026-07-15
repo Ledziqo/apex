@@ -219,6 +219,52 @@ def toggle_proxy():
     emit_feed('system', f'Proxy chain {"ENABLED" if Config.PROXY_ENABLED else "DISABLED"}', 'info')
     return jsonify({'proxy_enabled': Config.PROXY_ENABLED})
 
+@app.route('/api/proxy/health', methods=['GET'])
+@login_required
+def proxy_health():
+    """Check proxy health status"""
+    try:
+        from modules.anonymity.proxy_manager import proxy_manager
+        health = proxy_manager.check_proxy_health()
+        return jsonify({
+            'total': health.get('total', 0),
+            'healthy': health.get('healthy', 0),
+            'dead': health.get('dead', 0),
+            'active_proxies': health.get('healthy', 0),
+            'healthy': health.get('healthy', 0) > 0,
+            'proxies': health.get('proxies', [])
+        })
+    except Exception as e:
+        return jsonify({'total': 0, 'healthy': 0, 'dead': 0, 'healthy': False, 'error': str(e)})
+
+@app.route('/api/proxy/settings', methods=['POST'])
+@login_required
+def proxy_settings():
+    """Save proxy settings and reload proxy list"""
+    data = request.get_json()
+    proxy_file = data.get('proxy_file', 'data/proxies.txt')
+    proxy_list = data.get('proxy_list', '')
+    
+    try:
+        # Save proxy list to file
+        os.makedirs(os.path.dirname(proxy_file), exist_ok=True)
+        with open(proxy_file, 'w') as f:
+            f.write(proxy_list)
+        
+        # Update config
+        Config.PROXY_LIST_FILE = proxy_file
+        
+        # Reload proxies
+        from modules.anonymity.proxy_manager import proxy_manager
+        proxy_manager.proxies = []
+        proxy_manager.load_proxies()
+        
+        count = len(proxy_manager.proxies)
+        emit_feed('system', f'Proxy settings saved — {count} proxies loaded from {proxy_file}', 'success')
+        return jsonify({'success': True, 'count': count, 'file': proxy_file})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
 @app.route('/api/tor/toggle', methods=['POST'])
 @login_required
 def toggle_tor():
@@ -2939,38 +2985,6 @@ def api_auth_import_curl():
         return jsonify(result)
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
-
-@app.route('/api/proxy/health', methods=['GET'])
-@login_required
-def api_proxy_health():
-    """Check health of configured proxies."""
-    healthy = 0
-    total = 0
-    
-    try:
-        if os.path.exists(Config.PROXY_LIST_FILE):
-            with open(Config.PROXY_LIST_FILE, 'r') as f:
-                proxies = [l.strip() for l in f if l.strip() and not l.startswith('#')]
-            total = len(proxies)
-            
-            for proxy in proxies[:5]:  # Check first 5
-                try:
-                    test_resp = requests.get('https://httpbin.org/ip', 
-                                            proxies={'http': proxy, 'https': proxy}, 
-                                            timeout=5)
-                    if test_resp.status_code == 200:
-                        healthy += 1
-                except:
-                    pass
-        
-        return jsonify({
-            'healthy': healthy > 0,
-            'active_proxies': healthy,
-            'total_proxies': total,
-            'proxy_enabled': Config.PROXY_ENABLED
-        })
-    except Exception as e:
-        return jsonify({'healthy': False, 'error': str(e), 'active_proxies': 0, 'total_proxies': 0})
 
 @app.route('/api/osint/profile', methods=['POST'])
 @login_required
