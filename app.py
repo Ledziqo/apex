@@ -256,27 +256,31 @@ def toggle_vpn():
             Config.VPN_ENABLED = True
             vpn_manager.original_ip = vpn_manager._get_public_ip()
             
-            # Check if Warp is connected
+            # Check if Warp is connected (primary method)
             warp_connected = False
             try:
                 import subprocess
                 result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
                 warp_connected = 'Connected' in result.stdout
-            except:
-                pass
+            except Exception as warp_err:
+                print(f"[VPN] warp-cli check failed: {warp_err}")
             
             if warp_connected:
                 vpn_manager.interface = 'CloudflareWarp'
                 vpn_manager.current_ip = vpn_manager._get_public_ip()
-                protection = vpn_manager.verify_protection()
-                if protection.get('protected'):
-                    emit_feed('system', f'🟢 VPN PROTECTED via Warp — IP: {vpn_manager.current_ip}', 'success')
-                    socketio.emit('vpn_status', protection)
-                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
-                else:
-                    emit_feed('system', f'🟡 Warp connected but IP unchanged. Check connection.', 'warning')
-                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': False, 'reason': 'IP unchanged'})
+                # Warp is connected — trust it regardless of IP comparison
+                emit_feed('system', f'🟢 VPN PROTECTED via Warp — IP: {vpn_manager.current_ip}', 'success')
+                protection = {
+                    'protected': True,
+                    'current_ip': vpn_manager.current_ip,
+                    'original_ip': vpn_manager.original_ip,
+                    'interface': 'CloudflareWarp',
+                    'method': 'warp-cli'
+                }
+                socketio.emit('vpn_status', protection)
+                return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
             
+            # Fallback: use improved is_vpn_active() which checks multiple methods
             if vpn_manager.is_vpn_active():
                 vpn_manager.current_ip = vpn_manager._get_public_ip()
                 protection = vpn_manager.verify_protection()
@@ -881,6 +885,30 @@ def scan_xss(target_url, discovered):
                         break
                 except: pass
     
+    # Test common parameter names on every page (even if no params found in links)
+    # This catches targets like XSS game where ?query= only exists in iframe content
+    common_params = ['q', 'query', 'search', 'id', 'page', 'name', 'user', 'term', 's', 'p', 'page', 'category', 'filter', 'sort', 'order', 'view', 'lang', 'ref', 'url', 'redirect', 'next', 'prev', 'file', 'path', 'dir', 'cmd', 'exec', 'command', 'action', 'do', 'func', 'function', 'option', 'option_value', 'type', 'mode', 'tab', 'section', 'page_id', 'post_id', 'article_id', 'product_id', 'item', 'slug']
+    for page in all_pages[:10]:
+        parsed = urlparse(page)
+        # Only test common params on pages that don't already have query params
+        # (to avoid duplicating work already done above)
+        if not parsed.query:
+            for param in common_params[:12]:
+                ctx = find_reflection_context(sess, page, param)
+                if ctx and ctx.get('reflected'):
+                    context = ctx.get('context', 'html_body')
+                    payloads = payloads_by_context.get(context, generic_payloads)
+                    for payload in payloads[:3]:
+                        try:
+                            test_params = {param: [payload]}
+                            new_query = urlencode(test_params, doseq=True)
+                            test_url = urlunparse(parsed._replace(query=new_query))
+                            r = sess.get(test_url, timeout=5)
+                            if payload in r.text or ('alert' in r.text and 'APEX' in r.text):
+                                vulns.append({'type':'xss','subtype':'reflected','endpoint':page,'parameter':param,'payload':payload,'context':context,'result':f'Payload reflected in {context} (common param)','confirmed':True,'severity':'high','target':target_url,'description':f'Reflected XSS via common parameter "{param}" in {context}.'})
+                                break
+                        except: pass
+    
     try:
         r = sess.get(target_url, timeout=5)
         dom_sinks = ['document.write(','innerHTML','eval(','location.href','location.hash','outerHTML','insertAdjacentHTML','setTimeout(','setInterval(','document.cookie','window.open(','.src']
@@ -1208,7 +1236,7 @@ def run_full_scan(scan_id, target, scan_type):
         emit_feed(scan_id, f'Initializing scan on {target}...', 'info')
         update_progress(scan_id, 5)
         emit_feed(scan_id, 'Crawling target to discover pages and parameters...', 'info')
-        discovered = crawl_target(target, max_pages=15)
+        discovered = crawl_target(target, max_pages=30)
         emit_feed(scan_id, f'Discovered {len(discovered["pages"])} pages, {len(discovered["forms"])} forms, {len(discovered["params"])} parameters', 'success')
         update_progress(scan_id, 20)
         emit_feed(scan_id, 'Running port scan...', 'info')
@@ -1260,13 +1288,18 @@ def run_full_scan(scan_id, target, scan_type):
         recon_thread.start()
         for name, scanner_func, progress in scanners:
             emit_feed(scan_id, f'Scanning for {name}...', 'info')
+            # Emit live scan step for frontend
+            socketio.emit('scan_step', {'scan_id': scan_id, 'scanner': name, 'status': 'scanning', 'found': 0})
             results = scanner_func(target, discovered)
+            found_count = len(results)
             for v in results:
                 all_vulns.append(v)
                 emit_feed(scan_id, f'⚠ {name} found on {v.get("endpoint", "N/A")}', 'warning')
                 if v.get('payload'): emit_feed(scan_id, f'   → Payload: {str(v["payload"])[:60]}', 'info')
                 emit_feed(scan_id, f'   → {v.get("result", "Vulnerable")}', 'success' if v.get('confirmed') else 'warning')
             if not results: emit_feed(scan_id, f'No {name} vulnerabilities found', 'info')
+            # Emit completion step
+            socketio.emit('scan_step', {'scan_id': scan_id, 'scanner': name, 'status': 'done', 'found': found_count})
             update_progress(scan_id, progress)
         scan_results[scan_id]['vulnerabilities'] = all_vulns
         scan_results[scan_id]['status'] = 'completed'

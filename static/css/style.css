@@ -32,6 +32,44 @@ html, body {
 }
 
 /* ============================================================
+   SCAN STEPS (Live Progress)
+   ============================================================ */
+.scan-steps {
+    padding: 8px 0;
+}
+.scan-step {
+    display: flex;
+    align-items: center;
+    padding: 6px 12px;
+    font-size: 12px;
+    font-family: var(--font);
+    border-bottom: 1px solid var(--border);
+}
+.scan-step:last-child {
+    border-bottom: none;
+}
+.scan-step-scanning {
+    color: var(--orange);
+}
+.scan-step-done {
+    color: var(--green);
+}
+.scan-step-pending {
+    color: var(--text-muted);
+}
+.step-icon {
+    width: 20px;
+    margin-right: 8px;
+}
+.step-name {
+    flex: 1;
+}
+.step-result {
+    color: var(--text-secondary);
+    font-size: 11px;
+}
+
+/* ============================================================
    LAYOUT
    ============================================================ */
 .app {

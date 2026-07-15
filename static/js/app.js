@@ -13,6 +13,7 @@ var allLogs = [];
 var currentLogFilter = 'all';
 var browserHistory = [];
 var browserHistoryIndex = -1;
+var scanSteps = []; // Live scan step display
 
 // ============================================================
 // INIT
@@ -49,6 +50,21 @@ document.addEventListener('DOMContentLoaded', function() {
             allLogs.push(entry);
             renderLogs();
             aiNarrate('feed', entry);
+        });
+        socket.on('scan_step', function(step) {
+            // Update or add scan step
+            var found = false;
+            for (var i = 0; i < scanSteps.length; i++) {
+                if (scanSteps[i].scanner === step.scanner) {
+                    scanSteps[i] = step;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                scanSteps.push(step);
+            }
+            renderScanSteps();
         });
         socket.on('feed_history', function(history) {
             allLogs = history || [];
@@ -231,6 +247,23 @@ function renderResults(vulns, summary) {
         html += '<span class="endpoint">' + escapeHtml(v.endpoint || '') + '</span>';
         html += '</div>';
     });
+    panel.innerHTML = html;
+}
+
+function renderScanSteps() {
+    var panel = document.getElementById('resultsPanel');
+    if (!panel || scanSteps.length === 0) return;
+    var html = '<div class="scan-steps">';
+    scanSteps.forEach(function(step) {
+        var icon = step.status === 'done' ? '✅' : (step.status === 'scanning' ? '🔄' : '⏳');
+        var foundText = step.found > 0 ? ' (' + step.found + ' found)' : '';
+        html += '<div class="scan-step scan-step-' + step.status + '">';
+        html += '<span class="step-icon">' + icon + '</span>';
+        html += '<span class="step-name">' + escapeHtml(step.scanner) + '</span>';
+        html += '<span class="step-result">' + foundText + '</span>';
+        html += '</div>';
+    });
+    html += '</div>';
     panel.innerHTML = html;
 }
 

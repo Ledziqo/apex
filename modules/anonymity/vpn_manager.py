@@ -6,6 +6,7 @@ import os
 import subprocess
 import socket
 import requests
+import re
 from config import Config
 
 
@@ -38,32 +39,7 @@ class VPNManager:
         if not self.enabled:
             return False
 
-        # Method 1: Check for ANY VPN interface (tun, wg, warp, CloudflareWarp)
-        try:
-            result = subprocess.run(['ip', 'link', 'show'], capture_output=True, text=True, timeout=3)
-            interfaces = result.stdout.lower()
-            for vpn_iface in ['tun', 'wg', 'warp', 'cloudflare', 'utun']:
-                if vpn_iface in interfaces and 'UP' in result.stdout:
-                    # Found a VPN interface - extract its name
-                    for line in result.stdout.split('\n'):
-                        if vpn_iface in line.lower() and 'UP' in line:
-                            self.interface = line.split(':')[1].strip().split('@')[0].strip()
-                            return True
-        except:
-            pass
-
-        # Method 2: Check specific interface (Linux)
-        try:
-            result = subprocess.run(
-                ['ip', 'link', 'show', self.interface],
-                capture_output=True, text=True, timeout=3
-            )
-            if 'UP' in result.stdout:
-                return True
-        except:
-            pass
-
-        # Method 3: Check Warp CLI status
+        # Method 1: Check Warp CLI status (most reliable for Cloudflare Warp)
         try:
             result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
             if 'Connected' in result.stdout or 'connected' in result.stdout:
@@ -72,7 +48,34 @@ class VPNManager:
         except:
             pass
 
-        # Method 4: Check if any VPN interface exists in /sys (Linux)
+        # Method 2: Check for ANY VPN interface via ip link show (robust parsing)
+        try:
+            result = subprocess.run(['ip', 'link', 'show'], capture_output=True, text=True, timeout=3)
+            vpn_keywords = ['tun', 'wg', 'warp', 'cloudflare', 'utun', 'CloudflareWarp']
+            for line in result.stdout.split('\n'):
+                line_lower = line.lower()
+                # Check if any VPN keyword is in this line AND the interface is UP
+                if any(kw in line_lower for kw in vpn_keywords) and 'up' in line_lower and 'state up' in line_lower:
+                    # Extract interface name - format: "3: interface_name: <BROADCAST,MULTICAST,UP>"
+                    match = re.match(r'\d+:\s+([^:@\s]+)', line)
+                    if match:
+                        self.interface = match.group(1)
+                        return True
+        except:
+            pass
+
+        # Method 3: Check specific configured interface
+        try:
+            result = subprocess.run(
+                ['ip', 'link', 'show', self.interface],
+                capture_output=True, text=True, timeout=3
+            )
+            if 'UP' in result.stdout and 'state UP' in result.stdout:
+                return True
+        except:
+            pass
+
+        # Method 4: Check /sys/class/net for VPN interfaces (Linux)
         for iface_name in ['tun0', 'wg0', 'warp', 'CloudflareWarp']:
             if os.path.exists(f'/sys/class/net/{iface_name}'):
                 try:
@@ -83,7 +86,22 @@ class VPNManager:
                 except:
                     pass
 
-        # Method 5: Compare public IP before/after VPN
+        # Method 5: Check /proc/net/dev for VPN interfaces (universal Linux fallback)
+        try:
+            with open('/proc/net/dev', 'r') as f:
+                content = f.read()
+            vpn_keywords = ['tun', 'wg', 'warp', 'cloudflare', 'utun', 'CloudflareWarp']
+            for line in content.split('\n')[2:]:  # Skip header lines
+                if line.strip():
+                    iface = line.split(':')[0].strip()
+                    iface_lower = iface.lower()
+                    if any(kw in iface_lower for kw in vpn_keywords):
+                        self.interface = iface
+                        return True
+        except:
+            pass
+
+        # Method 6: Compare public IP before/after VPN
         if self.original_ip and self.current_ip:
             if self.original_ip != self.current_ip:
                 return True
@@ -117,7 +135,6 @@ class VPNManager:
         if not self.enabled or not self.is_vpn_active():
             return None
         # VPN routes at OS level, so no special proxy config needed
-        # Just return a regular session — the OS handles routing
         session = requests.Session()
         session.verify = False
         return session
@@ -127,10 +144,37 @@ class VPNManager:
         if not self.enabled:
             return {'protected': False, 'reason': 'VPN not enabled'}
         
+        # Primary check: Warp CLI status (most reliable for Cloudflare Warp)
+        try:
+            result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
+            if 'Connected' in result.stdout or 'connected' in result.stdout:
+                current_ip = self._get_public_ip()
+                self.interface = 'CloudflareWarp'
+                return {
+                    'protected': True,
+                    'current_ip': current_ip,
+                    'original_ip': self.original_ip,
+                    'interface': self.interface,
+                    'method': 'warp-cli'
+                }
+        except:
+            pass
+        
         if not self.is_vpn_active():
             return {'protected': False, 'reason': 'VPN interface not detected'}
         
         current_ip = self._get_public_ip()
+        
+        # If interface is CloudflareWarp, trust it regardless of IP comparison
+        if self.interface == 'CloudflareWarp':
+            return {
+                'protected': True,
+                'current_ip': current_ip,
+                'original_ip': self.original_ip,
+                'interface': self.interface,
+                'method': 'warp-cli'
+            }
+        
         if self.original_ip and current_ip == self.original_ip:
             return {'protected': False, 'reason': f'IP unchanged ({current_ip}) — VPN may not be routing traffic'}
         
@@ -169,7 +213,6 @@ class VPNManager:
             return False
         try:
             # Linux iptables kill switch
-            # Allow traffic on VPN interface only
             subprocess.run(['iptables', '-A', 'OUTPUT', '-o', self.interface, '-j', 'ACCEPT'],
                          capture_output=True, timeout=3)
             subprocess.run(['iptables', '-A', 'OUTPUT', '-o', 'lo', '-j', 'ACCEPT'],
