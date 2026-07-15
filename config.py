@@ -50,7 +50,7 @@ class Config:
     AI_ENABLED = True
     AI_API_KEY = os.environ.get('AI_API_KEY', 'ollama')
     AI_BASE_URL = os.environ.get('AI_BASE_URL', 'http://localhost:11434/v1')
-    AI_MODEL = os.environ.get('AI_MODEL', 'llama3.2')
+    AI_MODEL = os.environ.get('AI_MODEL', 'deepseek-v4-flash')
     AI_MAX_TOKENS = 2000
     AI_TEMPERATURE = 0.7
 

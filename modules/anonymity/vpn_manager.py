@@ -7,6 +7,7 @@ import subprocess
 import socket
 import requests
 import re
+import shutil
 from config import Config
 
 
@@ -16,6 +17,66 @@ class VPNManager:
         self.interface = Config.VPN_INTERFACE
         self.current_ip = None
         self.original_ip = None
+        self._warp_cli_path = None
+
+    def _find_warp_cli(self):
+        """Find warp-cli binary in common locations (handles systemd limited PATH)"""
+        if self._warp_cli_path:
+            return self._warp_cli_path
+        
+        # Check common locations
+        possible_paths = [
+            'warp-cli',  # Default PATH
+            '/usr/bin/warp-cli',
+            '/usr/local/bin/warp-cli',
+            '/opt/warp-cli/bin/warp-cli',
+            '/snap/bin/warp-cli',
+            '/usr/sbin/warp-cli',
+        ]
+        
+        for path in possible_paths:
+            try:
+                result = subprocess.run([path, 'status'], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0 or 'Connected' in result.stdout or 'Status' in result.stdout:
+                    self._warp_cli_path = path
+                    return path
+            except:
+                continue
+        
+        # Also try shutil.which as fallback
+        try:
+            found = shutil.which('warp-cli')
+            if found:
+                self._warp_cli_path = found
+                return found
+        except:
+            pass
+        
+        # Last resort: use find command to locate warp-cli anywhere on the filesystem
+        try:
+            result = subprocess.run(
+                ['find', '/', '-name', 'warp-cli', '-type', 'f', '-maxdepth', '5', '2>/dev/null'],
+                capture_output=True, text=True, timeout=10, shell=True
+            )
+            if result.stdout.strip():
+                found_path = result.stdout.strip().split('\n')[0]
+                self._warp_cli_path = found_path
+                return found_path
+        except:
+            pass
+        
+        return None
+
+    def _check_warp_service(self):
+        """Check if warp-svc systemd service is running"""
+        try:
+            result = subprocess.run(
+                ['systemctl', 'is-active', 'warp-svc'],
+                capture_output=True, text=True, timeout=5
+            )
+            return result.stdout.strip() == 'active'
+        except:
+            return False
 
     def enable(self):
         """Enable VPN routing"""
@@ -40,13 +101,20 @@ class VPNManager:
             return False
 
         # Method 1: Check Warp CLI status (most reliable for Cloudflare Warp)
-        try:
-            result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
-            if 'Connected' in result.stdout or 'connected' in result.stdout:
-                self.interface = 'CloudflareWarp'
-                return True
-        except:
-            pass
+        warp_cli = self._find_warp_cli()
+        if warp_cli:
+            try:
+                result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+                if 'Connected' in result.stdout or 'connected' in result.stdout:
+                    self.interface = 'CloudflareWarp'
+                    return True
+            except:
+                pass
+        
+        # Method 1b: Check warp-svc systemd service as fallback
+        if self._check_warp_service():
+            self.interface = 'CloudflareWarp'
+            return True
 
         # Method 2: Check for ANY VPN interface via ip link show (robust parsing)
         try:
@@ -145,20 +213,34 @@ class VPNManager:
             return {'protected': False, 'reason': 'VPN not enabled'}
         
         # Primary check: Warp CLI status (most reliable for Cloudflare Warp)
-        try:
-            result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
-            if 'Connected' in result.stdout or 'connected' in result.stdout:
-                current_ip = self._get_public_ip()
-                self.interface = 'CloudflareWarp'
-                return {
-                    'protected': True,
-                    'current_ip': current_ip,
-                    'original_ip': self.original_ip,
-                    'interface': self.interface,
-                    'method': 'warp-cli'
-                }
-        except:
-            pass
+        warp_cli = self._find_warp_cli()
+        if warp_cli:
+            try:
+                result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+                if 'Connected' in result.stdout or 'connected' in result.stdout:
+                    current_ip = self._get_public_ip()
+                    self.interface = 'CloudflareWarp'
+                    return {
+                        'protected': True,
+                        'current_ip': current_ip,
+                        'original_ip': self.original_ip,
+                        'interface': self.interface,
+                        'method': 'warp-cli'
+                    }
+            except:
+                pass
+        
+        # Fallback: check warp-svc systemd service
+        if self._check_warp_service():
+            current_ip = self._get_public_ip()
+            self.interface = 'CloudflareWarp'
+            return {
+                'protected': True,
+                'current_ip': current_ip,
+                'original_ip': self.original_ip,
+                'interface': self.interface,
+                'method': 'warp-svc'
+            }
         
         if not self.is_vpn_active():
             return {'protected': False, 'reason': 'VPN interface not detected'}

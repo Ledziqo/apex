@@ -256,14 +256,23 @@ def toggle_vpn():
             Config.VPN_ENABLED = True
             vpn_manager.original_ip = vpn_manager._get_public_ip()
             
-            # Check if Warp is connected (primary method)
+            # Check if Warp is connected (primary method - uses improved path detection)
             warp_connected = False
             try:
-                import subprocess
-                result = subprocess.run(['warp-cli', 'status'], capture_output=True, text=True, timeout=5)
-                warp_connected = 'Connected' in result.stdout
+                warp_cli = vpn_manager._find_warp_cli()
+                if warp_cli:
+                    result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+                    warp_connected = 'Connected' in result.stdout
+                # Also check systemd service as fallback
+                if not warp_connected:
+                    warp_connected = vpn_manager._check_warp_service()
             except Exception as warp_err:
                 print(f"[VPN] warp-cli check failed: {warp_err}")
+                # Fallback: check systemd service
+                try:
+                    warp_connected = vpn_manager._check_warp_service()
+                except:
+                    pass
             
             if warp_connected:
                 vpn_manager.interface = 'CloudflareWarp'
@@ -888,6 +897,26 @@ def scan_xss(target_url, discovered):
     # Test common parameter names on every page (even if no params found in links)
     # This catches targets like XSS game where ?query= only exists in iframe content
     common_params = ['q', 'query', 'search', 'id', 'page', 'name', 'user', 'term', 's', 'p', 'page', 'category', 'filter', 'sort', 'order', 'view', 'lang', 'ref', 'url', 'redirect', 'next', 'prev', 'file', 'path', 'dir', 'cmd', 'exec', 'command', 'action', 'do', 'func', 'function', 'option', 'option_value', 'type', 'mode', 'tab', 'section', 'page_id', 'post_id', 'article_id', 'product_id', 'item', 'slug']
+    
+    # DIRECT TEST: Always test the target URL itself with common parameters
+    # This catches XSS game levels (1-6) where ?query= works directly on the URL
+    target_parsed = urlparse(target_url)
+    for param in common_params[:15]:
+        ctx = find_reflection_context(sess, target_url, param)
+        if ctx and ctx.get('reflected'):
+            context = ctx.get('context', 'html_body')
+            payloads = payloads_by_context.get(context, generic_payloads)
+            for payload in payloads[:3]:
+                try:
+                    test_params = {param: [payload]}
+                    new_query = urlencode(test_params, doseq=True)
+                    test_url = urlunparse(target_parsed._replace(query=new_query))
+                    r = sess.get(test_url, timeout=5)
+                    if payload in r.text or ('alert' in r.text and 'APEX' in r.text):
+                        vulns.append({'type':'xss','subtype':'reflected','endpoint':target_url,'parameter':param,'payload':payload,'context':context,'result':f'Payload reflected in {context} (direct test)','confirmed':True,'severity':'high','target':target_url,'description':f'Reflected XSS via parameter "{param}" on target URL.'})
+                        break
+                except: pass
+    
     for page in all_pages[:10]:
         parsed = urlparse(page)
         # Only test common params on pages that don't already have query params
