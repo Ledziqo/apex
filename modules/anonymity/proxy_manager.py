@@ -9,6 +9,15 @@ import threading
 import requests
 from config import Config
 
+# GitHub proxy list sources (proxifly free-proxy-list repo)
+PROXY_GITHUB_URLS = {
+    'socks5': 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/socks5/data.txt',
+    'socks4': 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/socks4/data.txt',
+    'http': 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/http/data.txt',
+    'https': 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/https/data.txt',
+    'all': 'https://raw.githubusercontent.com/proxifly/free-proxy-list/main/proxies/all/data.txt',
+}
+
 class ProxyManager:
     def __init__(self):
         self.proxies = []
@@ -25,6 +34,53 @@ class ProxyManager:
                     line = line.strip()
                     if line and not line.startswith('#'):
                         self.proxies.append(line)
+
+    def fetch_from_github(self, proxy_type='all', replace=True):
+        """Fetch proxies from proxifly free-proxy-list GitHub repo.
+        
+        Args:
+            proxy_type: Type of proxies to fetch ('socks5', 'socks4', 'http', 'https', 'all')
+            replace: If True, clears existing proxies before fetching (default: True)
+        """
+        url = PROXY_GITHUB_URLS.get(proxy_type, PROXY_GITHUB_URLS['all'])
+        try:
+            r = requests.get(url, timeout=15)
+            if r.status_code != 200:
+                return {'success': False, 'error': f'HTTP {r.status_code}', 'count': 0}
+            
+            lines = r.text.strip().split('\n')
+            fetched = [line.strip() for line in lines if line.strip() and not line.startswith('#')]
+            
+            if replace:
+                # Replace mode: clear existing proxies and use only fresh ones
+                self.proxies = list(fetched)
+                new_count = len(fetched)
+            else:
+                # Append mode: add to existing proxies (avoid duplicates)
+                existing = set(self.proxies)
+                new_count = 0
+                for proxy in fetched:
+                    if proxy not in existing:
+                        self.proxies.append(proxy)
+                        existing.add(proxy)
+                        new_count += 1
+            
+            # Save to file
+            proxy_file = Config.PROXY_LIST_FILE
+            os.makedirs(os.path.dirname(proxy_file), exist_ok=True)
+            with open(proxy_file, 'w') as f:
+                f.write('\n'.join(self.proxies))
+            
+            return {
+                'success': True,
+                'count': len(fetched),
+                'new': new_count,
+                'total': len(self.proxies),
+                'source': url,
+                'mode': 'replace' if replace else 'append'
+            }
+        except Exception as e:
+            return {'success': False, 'error': str(e), 'count': 0}
     
     def get_proxy(self):
         """Get a working proxy"""

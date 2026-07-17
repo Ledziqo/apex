@@ -45,8 +45,53 @@
             z-index: 1;
             text-align: center;
             padding: 40px 24px;
-            max-width: 420px;
+            max-width: 480px;
             width: 100%;
+        }
+        /* Glowing APEX Logo */
+        .apex-logo {
+            font-family: var(--font-mono);
+            font-size: 48px;
+            font-weight: 900;
+            letter-spacing: 8px;
+            color: var(--red);
+            text-shadow: 0 0 20px rgba(229,57,53,0.5), 0 0 40px rgba(229,57,53,0.3), 0 0 80px rgba(229,57,53,0.1);
+            margin-bottom: 8px;
+            animation: logoPulse 3s ease-in-out infinite;
+        }
+        @keyframes logoPulse {
+            0%, 100% { text-shadow: 0 0 20px rgba(229,57,53,0.5), 0 0 40px rgba(229,57,53,0.3), 0 0 80px rgba(229,57,53,0.1); }
+            50% { text-shadow: 0 0 30px rgba(229,57,53,0.7), 0 0 60px rgba(229,57,53,0.4), 0 0 100px rgba(229,57,53,0.2); }
+        }
+        .apex-subtitle {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            letter-spacing: 6px;
+            color: #3a3d4a;
+            margin-bottom: 32px;
+            text-transform: uppercase;
+        }
+        /* Terminal typing effect */
+        .terminal-line {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            color: #5c6070;
+            margin-bottom: 24px;
+            min-height: 20px;
+            letter-spacing: 1px;
+        }
+        .terminal-line .cursor {
+            display: inline-block;
+            width: 8px;
+            height: 14px;
+            background: var(--red);
+            animation: blink 1s step-end infinite;
+            vertical-align: text-bottom;
+            margin-left: 2px;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
         }
         /* Login card */
         .login-card {
@@ -117,6 +162,7 @@
         @media (max-width: 500px) {
             .login-card { padding: 20px 16px; }
             .login-btn { font-size: 12px; letter-spacing: 2px; }
+            .apex-logo { font-size: 32px; letter-spacing: 4px; }
         }
     </style>
 </head>
@@ -125,6 +171,14 @@
     <canvas id="matrixCanvas"></canvas>
 
     <div class="container">
+        <div class="apex-logo">🔺 APEX</div>
+        <div class="apex-subtitle">Autonomous Pentest Arsenal</div>
+        
+        <!-- Terminal Typing Effect -->
+        <div class="terminal-line" id="terminalLine">
+            <span id="terminalText"></span><span class="cursor"></span>
+        </div>
+
         <div class="login-card">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
@@ -169,7 +223,6 @@
                 const x = i * fontSize;
                 const y = drops[i] * fontSize;
                 
-                // Brighter at top, dimmer at bottom
                 const brightness = 1 - (y / canvas.height) * 0.5;
                 const opacity = Math.random() * 0.3 + 0.5;
                 ctx.fillStyle = `rgba(229, 57, 53, ${opacity * brightness})`;
@@ -189,6 +242,50 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
         });
+
+        // ============================================================
+        // TERMINAL TYPING EFFECT
+        // ============================================================
+        const messages = [
+            'APEX v3.0 // Initializing attack surface...',
+            'Loading exploit modules... 19 scanners online',
+            'C2 beacon channels: HTTPS | DNS | WS | ICMP | Tor',
+            'AI Co-Pilot: ONLINE // Ghost Mode: STANDBY',
+            'Worm Engine: ARMED // Multi-Target Queue: READY',
+            'System check complete. All systems nominal.',
+        ];
+        
+        let msgIndex = 0;
+        let charIndex = 0;
+        let isDeleting = false;
+        const terminalText = document.getElementById('terminalText');
+        
+        function typeEffect() {
+            const currentMsg = messages[msgIndex];
+            
+            if (!isDeleting) {
+                terminalText.textContent = currentMsg.substring(0, charIndex + 1);
+                charIndex++;
+                
+                if (charIndex === currentMsg.length) {
+                    setTimeout(() => { isDeleting = true; }, 2000);
+                }
+            } else {
+                terminalText.textContent = currentMsg.substring(0, charIndex - 1);
+                charIndex--;
+                
+                if (charIndex === 0) {
+                    isDeleting = false;
+                    msgIndex = (msgIndex + 1) % messages.length;
+                }
+            }
+            
+            const delay = isDeleting ? 30 : 60;
+            setTimeout(typeEffect, delay);
+        }
+        
+        // Start typing after a brief delay
+        setTimeout(typeEffect, 500);
     </script>
 </body>
 </html>

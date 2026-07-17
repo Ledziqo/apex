@@ -8,6 +8,7 @@ import socket
 import requests
 import re
 import shutil
+import time
 from config import Config
 
 
@@ -78,13 +79,53 @@ class VPNManager:
         except:
             return False
 
+    def connect_warp(self):
+        """Connect to Cloudflare Warp VPN"""
+        warp_cli = self._find_warp_cli()
+        if not warp_cli:
+            return {'success': False, 'message': 'warp-cli not found on system'}
+        try:
+            # First check if already connected
+            result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+            if 'Connected' in result.stdout:
+                return {'success': True, 'message': 'Already connected to Warp'}
+            # Try to connect
+            subprocess.run([warp_cli, 'connect'], capture_output=True, text=True, timeout=10)
+            time.sleep(2)
+            # Verify
+            result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+            if 'Connected' in result.stdout:
+                self.enabled = True
+                Config.VPN_ENABLED = True
+                self.interface = 'CloudflareWarp'
+                self.current_ip = self._get_public_ip()
+                return {'success': True, 'message': 'Warp connected successfully', 'ip': self.current_ip}
+            return {'success': False, 'message': 'Warp connect command ran but status not confirmed'}
+        except Exception as e:
+            return {'success': False, 'message': f'Warp connect failed: {str(e)}'}
+
+    def disconnect_warp(self):
+        """Disconnect from Cloudflare Warp VPN"""
+        warp_cli = self._find_warp_cli()
+        if not warp_cli:
+            return {'success': False, 'message': 'warp-cli not found'}
+        try:
+            subprocess.run([warp_cli, 'disconnect'], capture_output=True, text=True, timeout=10)
+            self.enabled = False
+            Config.VPN_ENABLED = False
+            return {'success': True, 'message': 'Warp disconnected'}
+        except Exception as e:
+            return {'success': False, 'message': str(e)}
+
     def enable(self):
         """Enable VPN routing"""
         self.enabled = True
         Config.VPN_ENABLED = True
-        # Store original IP for comparison
+        # Store original IP for comparison (before VPN connects)
         if not self.original_ip:
             self.original_ip = self._get_public_ip()
+        # Give VPN a moment to establish, then get current IP
+        time.sleep(2)
         self.current_ip = self._get_public_ip()
         return self.is_vpn_active()
 
@@ -99,6 +140,12 @@ class VPNManager:
         """Check if VPN interface is actually up and routing traffic"""
         if not self.enabled:
             return False
+
+        # PRIMARY METHOD: Compare public IP before/after VPN
+        # This is the most reliable check — if IPs differ, traffic is routing through VPN
+        if self.original_ip and self.current_ip:
+            if self.original_ip != self.current_ip:
+                return True
 
         # Method 1: Check Warp CLI status (most reliable for Cloudflare Warp)
         warp_cli = self._find_warp_cli()
@@ -168,11 +215,6 @@ class VPNManager:
                         return True
         except:
             pass
-
-        # Method 6: Compare public IP before/after VPN
-        if self.original_ip and self.current_ip:
-            if self.original_ip != self.current_ip:
-                return True
 
         return False
 

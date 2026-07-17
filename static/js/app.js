@@ -1041,6 +1041,142 @@ function saveDefaceSettings() {
 }
 
 // ============================================================
+// HACK IT — One-click autonomous attack
+// ============================================================
+function hackIt() {
+    var target = document.getElementById('targetInput').value.trim();
+    if (!target) { toast('Enter a target URL', 'error'); return; }
+    if (!target.startsWith('http')) target = 'https://' + target;
+    document.getElementById('targetInput').value = target;
+    
+    var btn = document.getElementById('hackItBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ HACKING...';
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('nukeBtn').disabled = true;
+    document.getElementById('scanStatus').textContent = 'HACKING...';
+    
+    addAiMsg('ai', '☢️ HACK IT initiated on ' + target + ' — full autonomous attack chain running...');
+    toast('☢️ HACK IT initiated on ' + target, 'info');
+    
+    fetch('/api/autopilot/hack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: target, options: { auto_exploit: true, deploy_persistence: true, exfiltrate_data: true, cover_tracks: true } })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.status === 'started') {
+            addAiMsg('ai', '✅ HACK IT mission launched — monitoring live feed for results...');
+            // Start polling for status
+            var statusInterval = setInterval(function() {
+                fetch('/api/autopilot/status')
+                    .then(function(r) { return r.json(); })
+                    .then(function(s) {
+                        if (s.mission && s.mission.status === 'completed') {
+                            clearInterval(statusInterval);
+                            btn.disabled = false;
+                            btn.textContent = '☢️ HACK IT';
+                            document.getElementById('scanBtn').disabled = false;
+                            document.getElementById('nukeBtn').disabled = false;
+                            document.getElementById('scanStatus').textContent = 'HACK COMPLETE';
+                            var summary = s.mission.summary || {};
+                            addAiMsg('ai', '🏁 MISSION COMPLETE! Found ' + (summary.vulnerabilities_found || 0) + ' vulns, exploited ' + (summary.exploits_succeeded || 0) + ', deployed ' + (summary.backdoors_deployed || 0) + ' backdoors, stole ' + (summary.records_stolen || 0) + ' records.');
+                            toast('🏁 HACK IT complete!', 'success');
+                        } else if (s.mission && s.mission.status === 'failed') {
+                            clearInterval(statusInterval);
+                            btn.disabled = false;
+                            btn.textContent = '☢️ HACK IT';
+                            document.getElementById('scanBtn').disabled = false;
+                            document.getElementById('nukeBtn').disabled = false;
+                            document.getElementById('scanStatus').textContent = 'FAILED';
+                            addAiMsg('ai', '❌ HACK IT failed: ' + (s.mission.error || 'Unknown error'));
+                            toast('HACK IT failed', 'error');
+                        }
+                    });
+            }, 3000);
+        } else {
+            btn.disabled = false;
+            btn.textContent = '☢️ HACK IT';
+            document.getElementById('scanBtn').disabled = false;
+            document.getElementById('nukeBtn').disabled = false;
+            toast('HACK IT failed to start', 'error');
+        }
+    }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = '☢️ HACK IT';
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('nukeBtn').disabled = false;
+        toast('HACK IT request failed', 'error');
+    });
+}
+
+// ============================================================
+// CONNECT WARP (VPN)
+// ============================================================
+function connectWarp() {
+    var btn = document.getElementById('connectWarpBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ CONNECTING...';
+    toast('Connecting to Cloudflare Warp...', 'info');
+    fetch('/api/vpn/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        btn.disabled = false;
+        if (d.success) {
+            btn.textContent = '✅ CONNECTED';
+            toast('🟢 Warp connected — ' + (d.ip || ''), 'success');
+            addAiMsg('ai', '🟢 Warp VPN connected — IP: ' + (d.ip || '?'));
+            // Enable VPN toggle to reflect connected state
+            vpnEnabled = true;
+            document.getElementById('vpnToggle').classList.add('active');
+            loadSafetyStatus();
+            loadDashSafety();
+        } else {
+            btn.textContent = '🛡️ WARP';
+            toast('🔴 Warp connect failed: ' + (d.message || 'Unknown'), 'error');
+            addAiMsg('ai', '🔴 Warp connection failed: ' + (d.message || 'Unknown'));
+        }
+    }).catch(function() {
+        btn.disabled = false;
+        btn.textContent = '🛡️ WARP';
+        toast('Warp connection request failed', 'error');
+    });
+}
+
+// ============================================================
+// FETCH PROXIES FROM GITHUB
+// ============================================================
+function fetchProxiesFromGithub() {
+    var proxyType = document.getElementById('proxyGithubType').value;
+    var resultEl = document.getElementById('proxyFetchResult');
+    resultEl.textContent = '⏳ Fetching ' + proxyType + ' proxies from GitHub...';
+    resultEl.style.color = '#f59e0b';
+    toast('Fetching ' + proxyType + ' proxies from GitHub...', 'info');
+    fetch('/api/proxy/fetch_github', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxy_type: proxyType, replace: true })
+    }).then(function(r) { return r.json(); }).then(function(d) {
+        if (d.success) {
+            resultEl.textContent = '✅ Fetched ' + d.count + ' proxies (' + d.mode + ' mode) — ' + d.total + ' total loaded';
+            resultEl.style.color = '#10b981';
+            toast('✅ ' + d.count + ' proxies fetched from GitHub', 'success');
+            addAiMsg('ai', '📥 Fetched ' + d.count + ' ' + proxyType + ' proxies from proxifly GitHub repo (' + d.mode + ' mode). ' + d.total + ' proxies loaded.');
+            // Refresh proxy stats
+            loadProxySettings();
+        } else {
+            resultEl.textContent = '❌ Failed: ' + (d.error || 'Unknown error');
+            resultEl.style.color = '#ef4444';
+            toast('GitHub proxy fetch failed', 'error');
+        }
+    }).catch(function() {
+        resultEl.textContent = '❌ Network error fetching proxies';
+        resultEl.style.color = '#ef4444';
+        toast('GitHub proxy fetch network error', 'error');
+    });
+}
+
+// ============================================================
 // PROXY SETTINGS
 // ============================================================
 function loadProxySettings() {
@@ -1192,3 +1328,442 @@ function toast(message, type) {
     container.appendChild(div);
     setTimeout(function() { div.remove(); }, 3000);
 }
+
+// ============================================================
+// THEME TOGGLE (Dark/Light)
+// ============================================================
+function toggleTheme() {
+    var current = localStorage.getItem('apex_theme') || 'dark';
+    var next = current === 'dark' ? 'light' : 'dark';
+    setTheme(next);
+}
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('apex_theme', theme);
+    var btn = document.getElementById('themeToggleBtn');
+    if (btn) btn.textContent = theme === 'dark' ? '🌙' : '☀️';
+}
+
+// Load saved theme on init
+(function() {
+    var saved = localStorage.getItem('apex_theme') || 'dark';
+    setTheme(saved);
+})();
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', function(e) {
+    // ? key - toggle shortcuts modal
+    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
+        var modal = document.getElementById('shortcutsModal');
+        if (modal) modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+    }
+    // T key - toggle theme
+    if (e.key === 't' || e.key === 'T') {
+        if (!e.ctrlKey && !e.metaKey) toggleTheme();
+    }
+    // N key - NUKE
+    if (e.key === 'n' || e.key === 'N') {
+        if (!e.ctrlKey && !e.metaKey) startNuke();
+    }
+    // G key - Ghost mode
+    if (e.key === 'g' || e.key === 'G') {
+        if (!e.ctrlKey && !e.metaKey) toggleGhostMode();
+    }
+    // W key - Worm mode
+    if (e.key === 'w' || e.key === 'W') {
+        if (!e.ctrlKey && !e.metaKey) toggleWormMode();
+    }
+    // 1-4 keys - switch tabs
+    if (e.key >= '1' && e.key <= '4') {
+        var tabs = ['dashboard', 'history', 'logs', 'safety'];
+        var idx = parseInt(e.key) - 1;
+        if (tabs[idx]) switchTab(tabs[idx]);
+    }
+    // Enter on target input - start scan
+    if (e.key === 'Enter' && document.activeElement === document.getElementById('targetInput')) {
+        startScan();
+    }
+    // Ctrl+Enter - HACK IT
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+        hackIt();
+    }
+});
+
+// ============================================================
+// CHART.JS DONUT CHART
+// ============================================================
+var vulnChartInstance = null;
+
+function renderVulnChart(critical, high, medium, low) {
+    var canvas = document.getElementById('vulnChart');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    
+    if (vulnChartInstance) {
+        vulnChartInstance.destroy();
+    }
+    
+    var total = critical + high + medium + low;
+    if (total === 0) {
+        vulnChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No vulns'],
+                datasets: [{ data: [1], backgroundColor: ['#252836'] }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: { legend: { display: false } }
+            }
+        });
+        return;
+    }
+    
+    vulnChartInstance = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Critical', 'High', 'Medium', 'Low'],
+            datasets: [{
+                data: [critical, high, medium, low],
+                backgroundColor: ['#e53935', '#c62828', '#e57373', '#00c853'],
+                borderColor: ['#000', '#000', '#000', '#000'],
+                borderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: { color: '#999', font: { size: 10 }, padding: 8 }
+                }
+            },
+            cutout: '60%'
+        }
+    });
+}
+
+// Override renderResults to also update chart
+var _origRenderResults = renderResults;
+renderResults = function(vulns, summary) {
+    if (_origRenderResults) _origRenderResults(vulns, summary);
+    if (summary) {
+        renderVulnChart(summary.critical || 0, summary.high || 0, summary.medium || 0, summary.low || 0);
+    }
+    // Also render scan timeline
+    renderScanTimeline(vulns);
+};
+
+// ============================================================
+// SCAN TIMELINE
+// ============================================================
+function renderScanTimeline(vulns) {
+    var panel = document.getElementById('timelinePanel');
+    if (!panel) return;
+    
+    if (!vulns || vulns.length === 0) {
+        panel.innerHTML = '<div class="empty">No scan running</div>';
+        return;
+    }
+    
+    var html = '<div class="scan-timeline">';
+    var types = {};
+    vulns.forEach(function(v) {
+        var t = v.type || 'unknown';
+        if (!types[t]) types[t] = 0;
+        types[t]++;
+    });
+    
+    var step = 0;
+    Object.keys(types).forEach(function(type) {
+        step++;
+        html += '<div class="timeline-step">';
+        html += '<span class="timeline-dot done"></span>';
+        html += '<div class="timeline-content">';
+        html += '<div class="timeline-label">' + type.toUpperCase() + '</div>';
+        html += '<div class="timeline-detail">' + types[type] + ' found</div>';
+        html += '</div></div>';
+    });
+    
+    html += '</div>';
+    panel.innerHTML = html;
+}
+
+// ============================================================
+// GHOST MODE TOGGLE
+// ============================================================
+function toggleGhostMode() {
+    var toggle = document.getElementById('ghostToggle');
+    if (!toggle) return;
+    
+    var isActive = toggle.classList.contains('active');
+    var url = isActive ? '/api/ghost/deactivate' : '/api/ghost/activate';
+    
+    fetch(url, { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            if (d.status === 'activated' || d.status === 'deactivated') {
+                toggle.classList.toggle('active');
+                toast('Ghost Mode ' + d.status.toUpperCase(), d.status === 'activated' ? 'success' : 'info');
+                addAiMsg('ai', '👻 Ghost Mode ' + d.status.toUpperCase() + ' — ' + d.layers_active + '/' + d.layers_total + ' stealth layers active');
+            }
+        })
+        .catch(function() {
+            // Toggle locally even if API fails
+            toggle.classList.toggle('active');
+            toast('Ghost Mode toggled (local)', 'info');
+        });
+}
+
+// ============================================================
+// WORM MODE TOGGLE
+// ============================================================
+function toggleWormMode() {
+    fetch('/api/worm/toggle', { method: 'POST' })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            toast('Worm Mode: ' + (d.active ? 'ACTIVE' : 'INACTIVE'), d.active ? 'warning' : 'info');
+        })
+        .catch(function() {
+            toast('Worm mode not available', 'error');
+        });
+}
+
+// ============================================================
+// BATCH SCAN
+// ============================================================
+var batchTargets = [];
+
+function addBatchTarget() {
+    var input = document.getElementById('batchTargetInput');
+    if (!input) return;
+    var url = input.value.trim();
+    if (!url) { toast('Enter a target URL', 'error'); return; }
+    if (!url.startsWith('http')) url = 'https://' + url;
+    
+    batchTargets.push(url);
+    input.value = '';
+    renderBatchTargets();
+    toast('Added: ' + url, 'info');
+}
+
+function removeBatchTarget(index) {
+    batchTargets.splice(index, 1);
+    renderBatchTargets();
+}
+
+function clearBatchTargets() {
+    batchTargets = [];
+    renderBatchTargets();
+    document.getElementById('batchProgress').textContent = '';
+}
+
+function renderBatchTargets() {
+    var list = document.getElementById('batchTargetList');
+    if (!list) return;
+    
+    if (batchTargets.length === 0) {
+        list.innerHTML = '<div style="color:#666;font-size:10px;padding:4px;">No targets added</div>';
+        return;
+    }
+    
+    var html = '';
+    batchTargets.forEach(function(url, i) {
+        html += '<div class="batch-target-item">';
+        html += '<span class="batch-target-url">' + escapeHtml(url) + '</span>';
+        html += '<span class="batch-target-remove" onclick="removeBatchTarget(' + i + ')">✕</span>';
+        html += '</div>';
+    });
+    list.innerHTML = html;
+}
+
+function startBatchScan() {
+    if (batchTargets.length === 0) { toast('Add targets first', 'error'); return; }
+    
+    var progress = document.getElementById('batchProgress');
+    progress.textContent = 'Scanning ' + batchTargets.length + ' targets...';
+    
+    // Scan each target sequentially
+    var completed = 0;
+    function scanNext(index) {
+        if (index >= batchTargets.length) {
+            progress.textContent = '✅ Batch scan complete — ' + completed + '/' + batchTargets.length + ' targets scanned';
+            toast('Batch scan complete', 'success');
+            return;
+        }
+        
+        var target = batchTargets[index];
+        progress.textContent = '[' + (index+1) + '/' + batchTargets.length + '] Scanning ' + target;
+        
+        fetch('/api/scan/batch', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ target: target, scan_type: 'full' })
+        })
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            completed++;
+            // Poll for completion
+            var pollInterval = setInterval(function() {
+                fetch('/api/scan/' + d.scan_id + '/status')
+                    .then(function(r) { return r.json(); })
+                    .then(function(s) {
+                        if (s.status === 'completed' || s.status === 'failed') {
+                            clearInterval(pollInterval);
+                            scanNext(index + 1);
+                        }
+                    });
+            }, 2000);
+        })
+        .catch(function() {
+            completed++;
+            scanNext(index + 1);
+        });
+    }
+    
+    scanNext(0);
+}
+
+// ============================================================
+// PROXY HEALTH CHECK
+// ============================================================
+function loadProxyHealth() {
+    fetch('/api/proxy/health')
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+            var countEl = document.getElementById('proxyHealthCount');
+            var bodyEl = document.getElementById('proxyHealthBody');
+            if (countEl) countEl.textContent = (d.healthy || 0) + '/' + (d.total || 0);
+            if (!bodyEl) return;
+            
+            if (!d.proxies || d.proxies.length === 0) {
+                bodyEl.innerHTML = '<div class="empty">No proxies loaded</div>';
+                return;
+            }
+            
+            var html = '';
+            d.proxies.forEach(function(p) {
+                var isHealthy = p.healthy;
+                html += '<div class="proxy-health-item">';
+                html += '<span class="proxy-health-dot ' + (isHealthy ? 'healthy' : 'dead') + '"></span>';
+                html += '<span class="proxy-health-url">' + escapeHtml(p.proxy) + '</span>';
+                html += '</div>';
+            });
+            bodyEl.innerHTML = html;
+        })
+        .catch(function() {
+            var bodyEl = document.getElementById('proxyHealthBody');
+            if (bodyEl) bodyEl.innerHTML = '<div class="empty">Proxy health check failed</div>';
+        });
+}
+
+// Load proxy health on init and every 30s
+setTimeout(loadProxyHealth, 2000);
+setInterval(loadProxyHealth, 30000);
+
+// ============================================================
+// HACK IT (AutoPilot)
+// ============================================================
+function hackIt() {
+    var target = document.getElementById('targetInput').value.trim();
+    if (!target) { toast('Enter a target URL', 'error'); return; }
+    if (!target.startsWith('http')) target = 'https://' + target;
+    
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('nukeBtn').disabled = true;
+    document.getElementById('scanStatus').textContent = 'HACKING...';
+    
+    addAiMsg('ai', '☢️ HACK IT initiated on ' + target + ' — running full autonomous attack chain...');
+    
+    fetch('/api/autopilot/hack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: target, options: { auto_exploit: true, deploy_persistence: true, exfiltrate_data: true, cover_tracks: true } })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        toast('HACK IT started on ' + target, 'success');
+        // Poll for completion
+        var pollInterval = setInterval(function() {
+            fetch('/api/autopilot/status')
+                .then(function(r) { return r.json(); })
+                .then(function(s) {
+                    if (!s.running && s.mission && s.mission.status === 'completed') {
+                        clearInterval(pollInterval);
+                        document.getElementById('scanBtn').disabled = false;
+                        document.getElementById('nukeBtn').disabled = false;
+                        document.getElementById('scanStatus').textContent = 'HACKED';
+                        var summary = s.mission.summary || {};
+                        toast('HACK IT complete! ' + (summary.vulnerabilities_found || 0) + ' vulns, ' + (summary.exploits_succeeded || 0) + ' exploited', 'success');
+                        addAiMsg('ai', '✅ HACK IT complete! ' + (summary.vulnerabilities_found || 0) + ' vulns found, ' + (summary.exploits_succeeded || 0) + ' exploited, ' + (summary.backdoors_deployed || 0) + ' backdoors deployed');
+                        loadHistory();
+                    } else if (s.mission && s.mission.status === 'failed') {
+                        clearInterval(pollInterval);
+                        document.getElementById('scanBtn').disabled = false;
+                        document.getElementById('nukeBtn').disabled = false;
+                        document.getElementById('scanStatus').textContent = 'FAILED';
+                        toast('HACK IT failed: ' + (s.mission.error || 'Unknown'), 'error');
+                    }
+                });
+        }, 3000);
+    })
+    .catch(function() {
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('nukeBtn').disabled = false;
+        document.getElementById('scanStatus').textContent = 'FAILED';
+        toast('HACK IT failed to start', 'error');
+    });
+}
+
+// ============================================================
+// PoC DOWNLOAD BUTTONS
+// ============================================================
+function downloadPoc(vuln) {
+    fetch('/api/poc/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ vulnerability: vuln })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.success) {
+            toast('PoC generated: ' + d.filename, 'success');
+            // Trigger download
+            window.location.href = '/api/poc/download?file=' + encodeURIComponent(d.filepath);
+        } else {
+            toast('PoC generation failed', 'error');
+        }
+    })
+    .catch(function() {
+        toast('PoC generation error', 'error');
+    });
+}
+
+// ============================================================
+// OVERRIDE VULN ITEM TO ADD PoC BUTTON
+// ============================================================
+var _origRenderVulnItem = renderVulnItem;
+renderVulnItem = function(vuln) {
+    var html = '';
+    if (_origRenderVulnItem) html = _origRenderVulnItem(vuln) || '';
+    
+    // Add PoC download button
+    var sev = vuln.severity || 'low';
+    var type = vuln.type || '?';
+    var endpoint = vuln.endpoint || '';
+    var param = vuln.parameter || '';
+    
+    html = '<div class="vuln-item" onclick="showVulnDetail(this)">';
+    html += '<span class="sev ' + sev + '">' + sev.toUpperCase() + '</span>';
+    html += '<span class="type">' + type.toUpperCase() + '</span>';
+    html += '<span class="endpoint">' + escapeHtml(endpoint) + (param ? ' [' + escapeHtml(param) + ']' : '') + '</span>';
+    html += '<button class="btn btn-sm" onclick="event.stopPropagation();downloadPoc(' + JSON.stringify(vuln).replace(/"/g, '"') + ')" style="float:right;padding:2px 6px;font-size:9px;">📄 PoC</button>';
+    html += '</div>';
+    
+    return html;
+};

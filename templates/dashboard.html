@@ -8,9 +8,30 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- KEYBOARD SHORTCUTS MODAL -->
+    <div class="modal-overlay" id="shortcutsModal" style="display:none;" onclick="if(event.target===this)document.getElementById('shortcutsModal').style.display='none'">
+        <div class="modal-content" style="max-width:500px;">
+            <div class="modal-header">
+                <span>⌨️ Keyboard Shortcuts</span>
+                <button class="modal-close" onclick="document.getElementById('shortcutsModal').style.display='none'">✕</button>
+            </div>
+            <div class="modal-body" style="padding:20px;">
+                <div class="shortcut-row"><kbd>?</kbd> <span>Toggle this help modal</span></div>
+                <div class="shortcut-row"><kbd>Enter</kbd> <span>Start scan on current target</span></div>
+                <div class="shortcut-row"><kbd>Ctrl+Enter</kbd> <span>HACK IT (full autopilot)</span></div>
+                <div class="shortcut-row"><kbd>N</kbd> <span>NUKE mode</span></div>
+                <div class="shortcut-row"><kbd>T</kbd> <span>Toggle theme (dark/light)</span></div>
+                <div class="shortcut-row"><kbd>G</kbd> <span>Toggle Ghost Mode</span></div>
+                <div class="shortcut-row"><kbd>W</kbd> <span>Toggle Worm Mode</span></div>
+                <div class="shortcut-row"><kbd>1-4</kbd> <span>Switch tabs (1=Dashboard, 2=History, 3=Logs, 4=Safety)</span></div>
+            </div>
+        </div>
+    </div>
 
     <!-- PREVIEW/EDITOR MODAL -->
     <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreviewModal()">
@@ -46,7 +67,8 @@
             <div class="sidebar-bottom">
                 <span class="status-dot" id="connDot"></span>
                 <span id="connText">ONLINE</span>
-                <span class="version-badge" id="versionBadge">v3.1</span>
+                <span class="version-badge" id="versionBadge">v4.0</span>
+                <button class="theme-toggle-btn" id="themeToggleBtn" onclick="toggleTheme()" title="Toggle Theme">🌓</button>
                 <a href="/logout" class="exit-link">EXIT</a>
             </div>
         </nav>
@@ -57,11 +79,14 @@
             <div class="topbar">
                 <input type="text" id="targetInput" placeholder="Target URL (https://example.com)" class="target-input">
                 <button class="btn btn-orange" id="scanBtn" onclick="startScan()">🔍 SCAN</button>
-                <button class="btn btn-red" id="nukeBtn" onclick="startNuke()">☢️ NUKE</button>
+                <button class="btn btn-red" id="hackItBtn" onclick="hackIt()" style="background:#dc2626;border-color:#dc2626;font-weight:700;">☢️ HACK IT</button>
+                <button class="btn btn-red" id="nukeBtn" onclick="startNuke()">💣 NUKE</button>
                 <div class="toggles">
                     <span class="toggle" id="proxyToggle" onclick="toggleAnon('proxy')">PROXY</span>
                     <span class="toggle" id="torToggle" onclick="toggleAnon('tor')">TOR</span>
                     <span class="toggle" id="vpnToggle" onclick="toggleAnon('vpn')">VPN</span>
+                    <span class="toggle" id="ghostToggle" onclick="toggleGhostMode()" style="border-color:#8b5cf6;color:#8b5cf6;">👻 GHOST</span>
+                    <button class="btn btn-sm btn-warp" id="connectWarpBtn" onclick="connectWarp()" title="Connect Cloudflare Warp">🛡️ WARP</button>
                 </div>
                 <span id="scanStatus" class="scan-status"></span>
             </div>
@@ -79,7 +104,6 @@
                             <input type="text" id="browserUrl" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserNavigate()">
                             <button class="btn btn-orange btn-sm" onclick="browserNavigate()">GO</button>
                         </div>
-                        <!-- BROWSER ACTION BAR -->
                         <div class="browser-action-bar">
                             <button class="btn btn-sm btn-action" onclick="browserAction('scan')">🔍 SCAN PAGE</button>
                             <button class="btn btn-sm btn-action" onclick="browserAction('exploit')">💣 EXPLOIT</button>
@@ -103,6 +127,22 @@
                         </div>
                     </div>
 
+                    <!-- CHART PANEL -->
+                    <div class="panel chart-panel">
+                        <div class="panel-header">📊 VULNERABILITY DISTRIBUTION</div>
+                        <div class="panel-body" style="padding:10px;">
+                            <canvas id="vulnChart" width="200" height="200"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- SCAN TIMELINE PANEL -->
+                    <div class="panel timeline-panel">
+                        <div class="panel-header">⏱️ SCAN PROGRESS</div>
+                        <div class="panel-body" id="timelinePanel">
+                            <div class="empty">No scan running</div>
+                        </div>
+                    </div>
+
                     <!-- SAFETY STATUS PANEL (Dashboard) -->
                     <div class="panel safety-dash-panel">
                         <div class="panel-header">🛡️ SAFETY STATUS <span id="dashSafetyStatus"></span></div>
@@ -121,8 +161,8 @@
                                     <span class="safety-dash-value" id="dashSafetyProxy">---</span>
                                 </div>
                                 <div class="safety-dash-item">
-                                    <span class="safety-dash-label">DNS</span>
-                                    <span class="safety-dash-value" id="dashSafetyDns">---</span>
+                                    <span class="safety-dash-label">Ghost</span>
+                                    <span class="safety-dash-value" id="dashSafetyGhost">---</span>
                                 </div>
                                 <div class="safety-dash-item">
                                     <span class="safety-dash-label">Hidden IP</span>
@@ -137,6 +177,31 @@
                                     <span class="safety-dash-value" id="dashSafetyOverall">---</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <!-- PROXY HEALTH PANEL -->
+                    <div class="panel proxy-health-panel">
+                        <div class="panel-header">🔗 PROXY HEALTH <span id="proxyHealthCount">0/0</span></div>
+                        <div class="panel-body" id="proxyHealthBody">
+                            <div class="empty">No proxies loaded</div>
+                        </div>
+                    </div>
+
+                    <!-- BATCH SCAN PANEL -->
+                    <div class="panel batch-panel">
+                        <div class="panel-header">📦 BATCH SCAN</div>
+                        <div class="panel-body" id="batchPanelBody">
+                            <div style="display:flex;gap:8px;margin-bottom:8px;">
+                                <input type="text" id="batchTargetInput" placeholder="Add target URL..." style="flex:1;background:#1a1d26;color:#e2e4e9;border:1px solid #252836;border-radius:6px;padding:8px;font-size:12px;">
+                                <button class="btn btn-orange btn-sm" onclick="addBatchTarget()">➕ ADD</button>
+                            </div>
+                            <div id="batchTargetList" style="margin-bottom:8px;max-height:120px;overflow-y:auto;"></div>
+                            <div style="display:flex;gap:8px;">
+                                <button class="btn btn-sm" onclick="startBatchScan()" style="flex:1;">▶ SCAN ALL</button>
+                                <button class="btn btn-sm" onclick="clearBatchTargets()" style="flex:0;">🗑️</button>
+                            </div>
+                            <div id="batchProgress" style="font-size:11px;color:#6b7280;margin-top:6px;"></div>
                         </div>
                     </div>
 
@@ -216,6 +281,7 @@
                             <div class="safety-row"><span class="safety-label">Proxy:</span><span class="safety-value" id="safetyProxy">---</span></div>
                             <div class="safety-row"><span class="safety-label">Tor:</span><span class="safety-value" id="safetyTor">---</span></div>
                             <div class="safety-row"><span class="safety-label">VPN:</span><span class="safety-value" id="safetyVpn">---</span></div>
+                            <div class="safety-row"><span class="safety-label">Ghost Mode:</span><span class="safety-value" id="safetyGhost">---</span></div>
                             <div class="safety-row"><span class="safety-label">DNS Leak:</span><span class="safety-value" id="safetyDns">---</span></div>
                             <div class="safety-row"><span class="safety-label">WebRTC:</span><span class="safety-value" id="safetyWebrtc">---</span></div>
                         </div>
@@ -243,6 +309,17 @@
                             <input type="text" id="setModel" placeholder="qwen3.5">
                             <button class="btn btn-orange btn-sm" onclick="saveAiSettings()">💾 SAVE</button>
                             <button class="btn btn-sm" onclick="testAi()">🔌 TEST</button>
+                        </div>
+                    </div>
+                    <div class="panel">
+                        <div class="panel-header">🎨 THEME</div>
+                        <div class="panel-body">
+                            <label>Current Theme</label>
+                            <div style="display:flex;gap:8px;margin-bottom:12px;">
+                                <button class="btn btn-sm" onclick="setTheme('dark')" id="themeDarkBtn" style="flex:1;">🌙 DARK</button>
+                                <button class="btn btn-sm" onclick="setTheme('light')" id="themeLightBtn" style="flex:1;">☀️ LIGHT</button>
+                            </div>
+                            <label>Theme persists across sessions (localStorage)</label>
                         </div>
                     </div>
                     <div class="panel">
@@ -277,6 +354,19 @@
                             <div class="proxy-stats" id="proxyStats" style="font-size:12px;color:#6b7280;margin:8px 0;"></div>
                             <button class="btn btn-orange btn-sm" onclick="saveProxySettings()">💾 SAVE & TEST</button>
                             <button class="btn btn-sm" onclick="testProxies()">🔌 TEST ALL</button>
+                            <hr style="border-color:#252836;margin:12px 0;">
+                            <label>Fetch from GitHub</label>
+                            <div style="display:flex;gap:8px;align-items:center;">
+                                <select id="proxyGithubType" style="flex:1;background:#1a1d26;color:#e2e4e9;border:1px solid #252836;border-radius:6px;padding:8px;font-size:12px;">
+                                    <option value="all">All Types</option>
+                                    <option value="socks5">SOCKS5</option>
+                                    <option value="socks4">SOCKS4</option>
+                                    <option value="http">HTTP</option>
+                                    <option value="https">HTTPS</option>
+                                </select>
+                                <button class="btn btn-orange btn-sm" onclick="fetchProxiesFromGithub()">📥 FETCH</button>
+                            </div>
+                            <div id="proxyFetchResult" style="font-size:11px;color:#6b7280;margin-top:6px;"></div>
                         </div>
                     </div>
                 </div>
@@ -285,6 +375,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/js/app.js?v=6"></script>
+    <script src="/static/js/app.js?v=7"></script>
 </body>
 </html>

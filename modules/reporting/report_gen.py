@@ -58,6 +58,28 @@ def generate_html_report(scan_results, vulnerabilities, exploits=None):
             <td>{exp.get('message', 'N/A')}</td>
         </tr>'''
     
+    # Build exploitation section
+    if exploits:
+        exploitation_section = f'''
+    <div class="section">
+        <h2>Exploitation Results</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Type</th>
+                    <th>Endpoint</th>
+                    <th>Status</th>
+                    <th>Details</th>
+                </tr>
+            </thead>
+            <tbody>
+                {exploit_rows}
+            </tbody>
+        </table>
+    </div>'''
+    else:
+        exploitation_section = ''
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -236,24 +258,7 @@ def generate_html_report(scan_results, vulnerabilities, exploits=None):
         </table>
     </div>
     
-    {f'''
-    <div class="section">
-        <h2>💥 Exploitation Results</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Type</th>
-                    <th>Endpoint</th>
-                    <th>Status</th>
-                    <th>Details</th>
-                </tr>
-            </thead>
-            <tbody>
-                {exploit_rows}
-            </tbody>
-        </table>
-    </div>
-    ''' if exploits else ''}
+    {exploitation_section}
     
     <div class="section">
         <h2>🛡️ Remediation Recommendations</h2>

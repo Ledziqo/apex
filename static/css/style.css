@@ -1,5 +1,5 @@
 /* ============================================================
-   APEX — Red/Black Theme
+   APEX — Dark/Light Theme with v4.0 Upgrades
    ============================================================ */
 
 :root {
@@ -18,6 +18,23 @@
     --font: 'JetBrains Mono', 'Consolas', monospace;
     --font-ui: 'Inter', -apple-system, sans-serif;
     --sidebar-w: 200px;
+    --chart-colors: #e53935, #c62828, #e57373, #00c853;
+}
+
+/* Light Theme */
+[data-theme="light"] {
+    --bg: #f5f5f5;
+    --bg-panel: #ffffff;
+    --bg-input: #f0f0f0;
+    --border: #e0e0e0;
+    --border-light: #d0d0d0;
+    --red: #d32f2f;
+    --red-hover: #b71c1c;
+    --red-glow: rgba(211,47,47,0.2);
+    --green: #2e7d32;
+    --text: #1a1a1a;
+    --text-secondary: #555555;
+    --text-muted: #888888;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,6 +46,7 @@ html, body {
     font-family: var(--font-ui);
     font-size: 13px;
     overflow: hidden;
+    transition: background 0.3s, color 0.3s;
 }
 
 /* ============================================================
@@ -67,6 +85,204 @@ html, body {
 .step-result {
     color: var(--text-secondary);
     font-size: 11px;
+}
+
+/* ============================================================
+   SCAN TIMELINE
+   ============================================================ */
+.scan-timeline {
+    padding: 8px 0;
+}
+.timeline-step {
+    display: flex;
+    align-items: flex-start;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-family: var(--font);
+    position: relative;
+}
+.timeline-step::before {
+    content: '';
+    position: absolute;
+    left: 20px;
+    top: 24px;
+    bottom: -6px;
+    width: 1px;
+    background: var(--border);
+}
+.timeline-step:last-child::before {
+    display: none;
+}
+.timeline-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.timeline-dot.pending {
+    background: var(--text-muted);
+}
+.timeline-dot.running {
+    background: var(--red);
+    animation: pulse 1s infinite;
+}
+.timeline-dot.done {
+    background: var(--green);
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+.timeline-content {
+    flex: 1;
+}
+.timeline-label {
+    color: var(--text);
+    font-weight: 600;
+}
+.timeline-detail {
+    color: var(--text-muted);
+    font-size: 10px;
+    margin-top: 2px;
+}
+
+/* ============================================================
+   CHART PANEL
+   ============================================================ */
+.chart-panel {
+    min-height: 0;
+}
+.chart-panel .panel-body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+.chart-panel canvas {
+    max-width: 200px;
+    max-height: 200px;
+}
+
+/* ============================================================
+   TIMELINE PANEL
+   ============================================================ */
+.timeline-panel {
+    min-height: 0;
+}
+
+/* ============================================================
+   PROXY HEALTH PANEL
+   ============================================================ */
+.proxy-health-panel {
+    min-height: 0;
+}
+.proxy-health-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-family: var(--font);
+    border-bottom: 1px solid var(--border);
+}
+.proxy-health-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 6px;
+    flex-shrink: 0;
+}
+.proxy-health-dot.healthy {
+    background: var(--green);
+}
+.proxy-health-dot.dead {
+    background: var(--red);
+}
+.proxy-health-url {
+    flex: 1;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ============================================================
+   BATCH SCAN PANEL
+   ============================================================ */
+.batch-panel {
+    min-height: 0;
+}
+.batch-target-item {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    font-size: 10px;
+    font-family: var(--font);
+    border-bottom: 1px solid var(--border);
+}
+.batch-target-url {
+    flex: 1;
+    color: var(--text-secondary);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.batch-target-status {
+    font-size: 9px;
+    margin-left: 8px;
+}
+.batch-target-remove {
+    cursor: pointer;
+    color: var(--red);
+    margin-left: 6px;
+    font-size: 12px;
+}
+
+/* ============================================================
+   KEYBOARD SHORTCUTS MODAL
+   ============================================================ */
+.shortcut-row {
+    display: flex;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+}
+.shortcut-row:last-child {
+    border-bottom: none;
+}
+.shortcut-row kbd {
+    display: inline-block;
+    padding: 3px 8px;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-family: var(--font);
+    font-size: 11px;
+    min-width: 60px;
+    text-align: center;
+    margin-right: 12px;
+    color: var(--red);
+}
+
+/* ============================================================
+   THEME TOGGLE BUTTON
+   ============================================================ */
+.theme-toggle-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px 8px;
+    font-size: 14px;
+    border-radius: 2px;
+    transition: all 0.15s;
+    margin-left: auto;
+}
+.theme-toggle-btn:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
 }
 
 /* ============================================================
@@ -221,6 +437,10 @@ html, body {
 .btn-sm { padding: 5px 10px; font-size: 10px; }
 .btn-red { background: var(--red); color: #fff; border-color: var(--red); }
 .btn-red:hover { background: var(--red-hover); }
+.btn-orange { background: #f97316; color: #000; border-color: #f97316; }
+.btn-orange:hover { background: #ea580c; }
+.btn-warp { background: transparent; border-color: #8b5cf6; color: #8b5cf6; }
+.btn-warp:hover { background: rgba(139,92,246,0.1); }
 
 /* ============================================================
    TABS
@@ -886,4 +1106,11 @@ html, body {
     display: flex;
     gap: 8px;
     align-items: center;
+}
+
+/* ============================================================
+   THEME TRANSITION ANIMATIONS
+   ============================================================ */
+body, .panel, .sidebar, .topbar, .ai-chat, .modal-content {
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
 }
