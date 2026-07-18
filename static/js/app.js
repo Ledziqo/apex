@@ -263,15 +263,12 @@ function renderResults(vulns, summary) {
     vulnerabilities = vulns || [];
     document.getElementById('vulnCount').textContent = vulnerabilities.length;
     
-    // Show/hide export bar
     var exportBar = document.getElementById('resultsExportBar');
     if (exportBar) exportBar.style.display = vulnerabilities.length > 0 ? 'flex' : 'none';
     
-    // Show/hide severity filters
     var sevFilters = document.getElementById('severityFilters');
     if (sevFilters) sevFilters.style.display = vulnerabilities.length > 0 ? 'flex' : 'none';
     
-    // Reset filters and pagination
     activeSevFilters = { critical: true, high: true, medium: true, low: true };
     currentPage = 1;
     
@@ -296,7 +293,6 @@ function renderFilteredResults() {
         return;
     }
     
-    // Pagination
     var totalPages = Math.ceil(filtered.length / pageSize);
     if (currentPage > totalPages) currentPage = totalPages;
     if (currentPage < 1) currentPage = 1;
@@ -304,7 +300,6 @@ function renderFilteredResults() {
     var end = Math.min(start + pageSize, filtered.length);
     var pageItems = filtered.slice(start, end);
     
-    // Build table
     var html = '<table class="results-table">';
     html += '<thead><tr>';
     html += '<th class="sev-cell">Severity</th>';
@@ -335,7 +330,6 @@ function renderFilteredResults() {
     html += '</tbody></table>';
     panel.innerHTML = html;
     
-    // Pagination controls
     if (totalPages > 1) {
         pagination.style.display = 'flex';
         var phtml = '';
@@ -568,7 +562,6 @@ function showTargetHistory() {
             html += '<div class="target-history-item" data-url="' + safeUrl + '">' + escapeHtml(h.target || '') + '</div>';
         });
         dropdown.innerHTML = html;
-        // Attach click handlers
         dropdown.querySelectorAll('.target-history-item').forEach(function(el) {
             el.addEventListener('click', function() {
                 selectTargetHistory(el.getAttribute('data-url'));
@@ -609,7 +602,7 @@ function toggleBrowser() {
 }
 
 // ============================================================
-// ANONYMITY TOGGLES
+// ANONYMITY TOGGLES — Now in Safety Card
 // ============================================================
 function toggleAnon(type) {
     var states = { proxy: proxyEnabled, tor: torEnabled, vpn: vpnEnabled };
@@ -617,8 +610,17 @@ function toggleAnon(type) {
     if (type === 'proxy') proxyEnabled = newState;
     if (type === 'tor') torEnabled = newState;
     if (type === 'vpn') vpnEnabled = newState;
+    
+    // Update the safety card toggle button
     var el = document.getElementById(type + 'Toggle');
-    if (el) el.classList.toggle('active', newState);
+    if (el) {
+        el.classList.toggle('active', newState);
+        el.textContent = newState ? 'ON' : 'OFF';
+    }
+    
+    // Also update the topbar toggle if it exists (for backward compat)
+    var topbarEl = document.querySelector('.topbar #' + type + 'Toggle');
+    if (topbarEl) topbarEl.classList.toggle('active', newState);
     
     toast(type.toUpperCase() + ' ' + (newState ? 'ON' : 'OFF'), 'info');
     
@@ -629,12 +631,16 @@ function toggleAnon(type) {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (type === 'proxy') {
             fetch('/api/proxy/health').then(function(r){return r.json();}).then(function(h) {
-                if (newState && !h.healthy) {
+                // Only warn if proxies ARE loaded but none are healthy
+                if (newState && h.total > 0 && !h.healthy) {
                     toast('⚠️ Proxy enabled but no healthy proxies found', 'warning');
                     addAiMsg('ai', '⚠️ Proxy toggled ON but no working proxies detected. Check your proxy list.');
-                } else if (newState) {
-                    toast('🟢 Proxy active — ' + h.active_proxies + ' healthy', 'success');
-                    addAiMsg('ai', '🟢 Proxy enabled — ' + h.active_proxies + ' healthy proxies. Traffic is being routed.');
+                } else if (newState && h.healthy > 0) {
+                    toast('🟢 Proxy active — ' + h.healthy + ' healthy', 'success');
+                    addAiMsg('ai', '🟢 Proxy enabled — ' + h.healthy + ' healthy proxies. Traffic is being routed.');
+                } else if (newState && h.total === 0) {
+                    toast('ℹ️ Proxy toggled ON — no proxies loaded yet. Add proxies in Settings.', 'info');
+                    addAiMsg('ai', 'ℹ️ Proxy toggled ON but no proxies loaded. Add proxy list in Settings.');
                 }
             });
         }
@@ -1417,7 +1423,11 @@ function connectWarp() {
             toast('🟢 Warp connected — ' + (d.ip || ''), 'success');
             addAiMsg('ai', '🟢 Warp VPN connected — IP: ' + (d.ip || '?'));
             vpnEnabled = true;
-            document.getElementById('vpnToggle').classList.add('active');
+            var vpnToggle = document.getElementById('vpnToggle');
+            if (vpnToggle) {
+                vpnToggle.classList.add('active');
+                vpnToggle.textContent = 'ON';
+            }
             loadSafetyStatus();
             loadDashSafety();
             updateBottomStatusBar();
@@ -1522,37 +1532,28 @@ function loadDashSafety() {
         // VPN
         var vpnActive = checks.vpn && checks.vpn.active;
         var vpnDot = document.getElementById('dashSafetyVpnDot');
-        var vpnVal = document.getElementById('dashSafetyVpn');
         if (vpnDot) {
             vpnDot.className = 'safety-compact-dot ' + (vpnActive ? 'active' : 'inactive');
-        }
-        if (vpnVal) {
-            vpnVal.textContent = vpnActive ? 'Active' : 'Inactive';
-            vpnVal.style.color = vpnActive ? '#10b981' : '#ef4444';
         }
         
         // Tor
         var torActive = checks.tor && checks.tor.active;
         var torDot = document.getElementById('dashSafetyTorDot');
-        var torVal = document.getElementById('dashSafetyTor');
         if (torDot) {
             torDot.className = 'safety-compact-dot ' + (torActive ? 'active' : 'inactive');
-        }
-        if (torVal) {
-            torVal.textContent = torActive ? 'Active' : 'Inactive';
-            torVal.style.color = torActive ? '#10b981' : '#ef4444';
         }
         
         // Proxy
         var proxyActive = checks.proxy && checks.proxy.active;
         var proxyDot = document.getElementById('dashSafetyProxyDot');
-        var proxyVal = document.getElementById('dashSafetyProxy');
         if (proxyDot) {
             proxyDot.className = 'safety-compact-dot ' + (proxyActive ? 'active' : 'inactive');
         }
-        if (proxyVal) {
-            proxyVal.textContent = proxyActive ? 'Active' : 'Inactive';
-            proxyVal.style.color = proxyActive ? '#10b981' : '#ef4444';
+        
+        // Hidden IP — show the actual exit IP so user can verify it's really working
+        var ipEl = document.getElementById('dashSafetyHiddenIp');
+        if (ipEl) {
+            ipEl.textContent = d.current_ip || '---';
         }
         
         // Badge
@@ -1565,6 +1566,28 @@ function loadDashSafety() {
             badgeEl.textContent = activeLayers > 0 ? '🟢 ' + activeLayers + ' layer' + (activeLayers > 1 ? 's' : '') : '🔴 None';
             badgeEl.style.color = activeLayers > 0 ? '#10b981' : '#ef4444';
         }
+        
+        // Sync toggle button states with actual backend state
+        var vpnToggle = document.getElementById('vpnToggle');
+        if (vpnToggle) {
+            vpnToggle.classList.toggle('active', vpnActive);
+            vpnToggle.textContent = vpnActive ? 'ON' : 'OFF';
+        }
+        var torToggle = document.getElementById('torToggle');
+        if (torToggle) {
+            torToggle.classList.toggle('active', torActive);
+            torToggle.textContent = torActive ? 'ON' : 'OFF';
+        }
+        var proxyToggle = document.getElementById('proxyToggle');
+        if (proxyToggle) {
+            proxyToggle.classList.toggle('active', proxyActive);
+            proxyToggle.textContent = proxyActive ? 'ON' : 'OFF';
+        }
+        
+        // Sync state variables
+        vpnEnabled = vpnActive;
+        torEnabled = torActive;
+        proxyEnabled = proxyActive;
     }).catch(function() {});
 }
 
@@ -1722,99 +1745,6 @@ function toggleWormMode() {
         toggle.classList.toggle('active');
         toast('Worm mode toggled (local)', 'info');
     });
-}
-
-// ============================================================
-// BATCH SCAN
-// ============================================================
-var batchTargets = [];
-
-function addBatchTarget() {
-    var input = document.getElementById('batchTargetInput');
-    if (!input) return;
-    var url = input.value.trim();
-    if (!url) { toast('Enter a target URL', 'error'); return; }
-    if (!url.startsWith('http')) url = 'https://' + url;
-    
-    batchTargets.push(url);
-    input.value = '';
-    renderBatchTargets();
-    toast('Added: ' + url, 'info');
-}
-
-function removeBatchTarget(index) {
-    batchTargets.splice(index, 1);
-    renderBatchTargets();
-}
-
-function clearBatchTargets() {
-    batchTargets = [];
-    renderBatchTargets();
-    document.getElementById('batchProgress').textContent = '';
-}
-
-function renderBatchTargets() {
-    var list = document.getElementById('batchTargetList');
-    if (!list) return;
-    
-    if (batchTargets.length === 0) {
-        list.innerHTML = '<div style="color:#666;font-size:10px;padding:4px;">No targets added</div>';
-        return;
-    }
-    
-    var html = '';
-    batchTargets.forEach(function(url, i) {
-        html += '<div class="batch-target-item">';
-        html += '<span class="batch-target-url">' + escapeHtml(url) + '</span>';
-        html += '<span class="batch-target-remove" onclick="removeBatchTarget(' + i + ')">✕</span>';
-        html += '</div>';
-    });
-    list.innerHTML = html;
-}
-
-function startBatchScan() {
-    if (batchTargets.length === 0) { toast('Add targets first', 'error'); return; }
-    
-    var progress = document.getElementById('batchProgress');
-    progress.textContent = 'Scanning ' + batchTargets.length + ' targets...';
-    
-    var completed = 0;
-    function scanNext(index) {
-        if (index >= batchTargets.length) {
-            progress.textContent = '✅ Batch scan complete — ' + completed + '/' + batchTargets.length + ' targets scanned';
-            toast('Batch scan complete', 'success');
-            return;
-        }
-        
-        var target = batchTargets[index];
-        progress.textContent = '[' + (index+1) + '/' + batchTargets.length + '] Scanning ' + target;
-        
-        fetch('/api/scan/batch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ target: target, scan_type: 'full' })
-        })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            completed++;
-            var pollInterval = setInterval(function() {
-                fetch('/api/scan/' + d.scan_id + '/status')
-                    .then(function(r) { return r.json(); })
-                    .then(function(s) {
-                        if (s.status === 'completed' || s.status === 'failed') {
-                            clearInterval(pollInterval);
-                            scanNext(index + 1);
-                        }
-                    });
-            }, 2000);
-        })
-        .catch(function() {
-            completed++;
-            scanNext(index + 1);
-        });
-    }
-    
-    scanNext(0);
 }
 
 // ============================================================

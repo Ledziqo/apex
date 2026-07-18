@@ -1212,6 +1212,33 @@ html, body {
     font-size: 10px;
 }
 
+/* Safety toggle buttons in compact card */
+.safety-toggle-btn {
+    margin-left: auto;
+    padding: 2px 8px;
+    font-size: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    color: var(--text-muted);
+    background: var(--bg-input);
+    transition: all 0.15s;
+    min-width: 36px;
+    text-align: center;
+}
+.safety-toggle-btn:hover {
+    border-color: var(--text-muted);
+    color: var(--text);
+}
+.safety-toggle-btn.active {
+    background: var(--red);
+    color: #000;
+    border-color: var(--red);
+}
+
 /* ============================================================
    DASHBOARD LIVE LOGS — Scrollable Feed
    ============================================================ */

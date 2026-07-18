@@ -79,9 +79,6 @@
                     <span id="scanStatus" class="scan-status"></span>
                 </div>
                 <div class="topbar-row topbar-toggles">
-                    <span class="toggle" id="proxyToggle" onclick="toggleAnon('proxy')">PROXY</span>
-                    <span class="toggle" id="torToggle" onclick="toggleAnon('tor')">TOR</span>
-                    <span class="toggle" id="vpnToggle" onclick="toggleAnon('vpn')">VPN</span>
                     <span class="toggle" id="ghostToggle" onclick="toggleGhostMode()" style="border-color:#8b5cf6;color:#8b5cf6;">👻 GHOST</span>
                     <span class="toggle" id="wormToggle" onclick="toggleWormMode()" style="border-color:#22c55e;color:#22c55e;">🧬 WORM</span>
                     <button class="btn btn-sm btn-warp" id="connectWarpBtn" onclick="connectWarp()" title="Connect Cloudflare Warp">🛡️ WARP</button>
@@ -96,7 +93,29 @@
             <!-- DASHBOARD TAB -->
             <div class="tab active" id="tab-dashboard">
                 <div class="dashboard-grid">
-                    <!-- LEFT COLUMN: Browser + Timeline -->
+                    <!-- LEFT COLUMN: Results + Timeline -->
+                    <div class="panel results-panel">
+                        <div class="panel-header">
+                            <span>💣 RESULTS</span>
+                            <span id="vulnCount">0</span>
+                            <div class="panel-header-actions" id="resultsExportBar" style="display:none;">
+                                <button class="btn btn-sm" onclick="exportResultsCSV()">📥 CSV</button>
+                                <button class="btn btn-sm" onclick="exportResultsJSON()">📥 JSON</button>
+                            </div>
+                        </div>
+                        <div class="severity-filters" id="severityFilters" style="display:none;">
+                            <span class="sev-chip crit active" data-sev="critical" onclick="toggleSevFilter('critical')">CRIT</span>
+                            <span class="sev-chip high active" data-sev="high" onclick="toggleSevFilter('high')">HIGH</span>
+                            <span class="sev-chip med active" data-sev="medium" onclick="toggleSevFilter('medium')">MED</span>
+                            <span class="sev-chip low active" data-sev="low" onclick="toggleSevFilter('low')">LOW</span>
+                        </div>
+                        <div class="panel-body" id="resultsPanel">
+                            <div class="empty">Enter a target and click SCAN</div>
+                        </div>
+                        <div class="results-pagination" id="resultsPagination" style="display:none;"></div>
+                    </div>
+
+                    <!-- MIDDLE COLUMN: Browser (bigger) -->
                     <div class="panel browser-panel">
                         <div class="panel-header">
                             <span>🌐 BROWSER</span>
@@ -129,29 +148,7 @@
                         </div>
                     </div>
 
-                    <!-- MIDDLE COLUMN: Results (takes center stage) -->
-                    <div class="panel results-panel">
-                        <div class="panel-header">
-                            <span>💣 RESULTS</span>
-                            <span id="vulnCount">0</span>
-                            <div class="panel-header-actions" id="resultsExportBar" style="display:none;">
-                                <button class="btn btn-sm" onclick="exportResultsCSV()">📥 CSV</button>
-                                <button class="btn btn-sm" onclick="exportResultsJSON()">📥 JSON</button>
-                            </div>
-                        </div>
-                        <div class="severity-filters" id="severityFilters" style="display:none;">
-                            <span class="sev-chip crit active" data-sev="critical" onclick="toggleSevFilter('critical')">CRIT</span>
-                            <span class="sev-chip high active" data-sev="high" onclick="toggleSevFilter('high')">HIGH</span>
-                            <span class="sev-chip med active" data-sev="medium" onclick="toggleSevFilter('medium')">MED</span>
-                            <span class="sev-chip low active" data-sev="low" onclick="toggleSevFilter('low')">LOW</span>
-                        </div>
-                        <div class="panel-body" id="resultsPanel">
-                            <div class="empty">Enter a target and click SCAN</div>
-                        </div>
-                        <div class="results-pagination" id="resultsPagination" style="display:none;"></div>
-                    </div>
-
-                    <!-- RIGHT COLUMN: Safety + Proxy Health + Batch -->
+                    <!-- RIGHT COLUMN: Safety + Proxy Health -->
                     <div class="panel safety-dash-panel">
                         <div class="panel-header">🛡️ SAFETY <span id="dashSafetyStatus"></span></div>
                         <div class="panel-body" id="dashSafetyBody">
@@ -159,17 +156,21 @@
                                 <div class="safety-compact-row">
                                     <span class="safety-compact-dot inactive" id="dashSafetyVpnDot"></span>
                                     <span class="safety-compact-label">VPN</span>
-                                    <span class="safety-compact-value" id="dashSafetyVpn">Inactive</span>
+                                    <span class="safety-toggle-btn" id="vpnToggle" onclick="toggleAnon('vpn')">OFF</span>
                                 </div>
                                 <div class="safety-compact-row">
                                     <span class="safety-compact-dot inactive" id="dashSafetyTorDot"></span>
                                     <span class="safety-compact-label">Tor</span>
-                                    <span class="safety-compact-value" id="dashSafetyTor">Inactive</span>
+                                    <span class="safety-toggle-btn" id="torToggle" onclick="toggleAnon('tor')">OFF</span>
                                 </div>
                                 <div class="safety-compact-row">
                                     <span class="safety-compact-dot inactive" id="dashSafetyProxyDot"></span>
                                     <span class="safety-compact-label">Proxy</span>
-                                    <span class="safety-compact-value" id="dashSafetyProxy">Inactive</span>
+                                    <span class="safety-toggle-btn" id="proxyToggle" onclick="toggleAnon('proxy')">OFF</span>
+                                </div>
+                                <div class="safety-compact-row" style="border-top:1px solid var(--border);padding-top:6px;margin-top:2px;">
+                                    <span class="safety-compact-label" style="min-width:auto;">🛡️ IP</span>
+                                    <span class="safety-compact-value mono" id="dashSafetyHiddenIp" style="font-size:9px;">---</span>
                                 </div>
                             </div>
                         </div>
@@ -182,23 +183,7 @@
                         </div>
                     </div>
 
-                    <div class="panel batch-panel">
-                        <div class="panel-header">📦 BATCH SCAN</div>
-                        <div class="panel-body" id="batchPanelBody">
-                            <div style="display:flex;gap:6px;margin-bottom:6px;">
-                                <input type="text" id="batchTargetInput" placeholder="Add target..." style="flex:1;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:6px;font-size:11px;">
-                                <button class="btn btn-orange btn-sm" onclick="addBatchTarget()">➕</button>
-                            </div>
-                            <div id="batchTargetList" style="margin-bottom:6px;max-height:80px;overflow-y:auto;"></div>
-                            <div style="display:flex;gap:6px;">
-                                <button class="btn btn-sm" onclick="startBatchScan()" style="flex:1;">▶ SCAN</button>
-                                <button class="btn btn-sm" onclick="clearBatchTargets()">🗑️</button>
-                            </div>
-                            <div id="batchProgress" style="font-size:10px;color:var(--text-muted);margin-top:4px;"></div>
-                        </div>
-                    </div>
-
-                    <!-- Timeline panel fills remaining space in right column -->
+                    <!-- Timeline panel -->
                     <div class="panel timeline-panel">
                         <div class="panel-header">⏱️ SCAN PROGRESS</div>
                         <div class="panel-body" id="timelinePanel">
@@ -398,6 +383,6 @@
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/js/app.js?v=9"></script>
+    <script src="/static/js/app.js?v=10"></script>
 </body>
 </html>
