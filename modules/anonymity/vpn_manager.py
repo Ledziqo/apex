@@ -129,6 +129,65 @@ class VPNManager:
         self.current_ip = self._get_public_ip()
         return self.is_vpn_active()
 
+    def connect_and_verify(self, max_wait=30):
+        """Connect Warp VPN and verify IP actually changed.
+        
+        This is the REAL fix — it doesn't just check if warp-cli says 'Connected',
+        it actually verifies the public IP changed before returning success.
+        
+        Args:
+            max_wait: Maximum seconds to wait for IP change (default 30)
+        """
+        if not self.original_ip:
+            self.original_ip = self._get_public_ip()
+        
+        # Step 1: Try to connect Warp
+        warp_cli = self._find_warp_cli()
+        if not warp_cli:
+            return {'success': False, 'message': 'warp-cli not found on system'}
+        
+        # Check if already connected
+        try:
+            result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
+            already_connected = 'Connected' in result.stdout
+        except:
+            already_connected = False
+        
+        if not already_connected:
+            try:
+                subprocess.run([warp_cli, 'connect'], capture_output=True, text=True, timeout=10)
+            except Exception as e:
+                return {'success': False, 'message': f'warp-cli connect failed: {str(e)}'}
+        
+        # Step 2: Poll until IP changes or timeout
+        start_time = time.time()
+        while time.time() - start_time < max_wait:
+            current_ip = self._get_public_ip()
+            if current_ip and current_ip != self.original_ip and current_ip != 'Unknown':
+                # IP changed — VPN is actually working
+                self.enabled = True
+                Config.VPN_ENABLED = True
+                self.current_ip = current_ip
+                self.interface = 'CloudflareWarp'
+                return {
+                    'success': True,
+                    'message': f'VPN connected and verified — IP changed from {self.original_ip} to {current_ip}',
+                    'original_ip': self.original_ip,
+                    'current_ip': current_ip,
+                    'protected': True
+                }
+            time.sleep(2)
+        
+        # Step 3: Timeout — IP never changed
+        final_ip = self._get_public_ip()
+        return {
+            'success': False,
+            'message': f'VPN connect timed out after {max_wait}s — IP still {final_ip} (same as original {self.original_ip})',
+            'original_ip': self.original_ip,
+            'current_ip': final_ip,
+            'protected': False
+        }
+
     def disable(self):
         """Disable VPN routing"""
         self.enabled = False
@@ -250,55 +309,76 @@ class VPNManager:
         return session
 
     def verify_protection(self):
-        """Verify that traffic is actually going through VPN"""
+        """Verify that traffic is actually going through VPN by comparing IPs"""
         if not self.enabled:
             return {'protected': False, 'reason': 'VPN not enabled'}
         
-        # Primary check: Warp CLI status (most reliable for Cloudflare Warp)
+        # Get current public IP
+        current_ip = self._get_public_ip()
+        self.current_ip = current_ip
+        
+        # Store original IP if not set
+        if not self.original_ip:
+            self.original_ip = self._get_public_ip()
+        
+        # Check if Warp CLI says connected
+        warp_connected = False
         warp_cli = self._find_warp_cli()
         if warp_cli:
             try:
                 result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
-                if 'Connected' in result.stdout or 'connected' in result.stdout:
-                    current_ip = self._get_public_ip()
-                    self.interface = 'CloudflareWarp'
-                    return {
-                        'protected': True,
-                        'current_ip': current_ip,
-                        'original_ip': self.original_ip,
-                        'interface': self.interface,
-                        'method': 'warp-cli'
-                    }
+                warp_connected = 'Connected' in result.stdout or 'connected' in result.stdout
             except:
                 pass
         
+        # If Warp says connected, check if IP actually changed
+        if warp_connected:
+            self.interface = 'CloudflareWarp'
+            if self.original_ip and current_ip != self.original_ip:
+                # IP changed — VPN is actually working
+                return {
+                    'protected': True,
+                    'current_ip': current_ip,
+                    'original_ip': self.original_ip,
+                    'interface': self.interface,
+                    'method': 'warp-cli'
+                }
+            else:
+                # Warp says connected but IP didn't change — not actually routing
+                return {
+                    'protected': False,
+                    'current_ip': current_ip,
+                    'original_ip': self.original_ip,
+                    'interface': self.interface,
+                    'method': 'warp-cli',
+                    'reason': f'Warp connected but IP unchanged ({current_ip}) — traffic not routing through VPN'
+                }
+        
         # Fallback: check warp-svc systemd service
         if self._check_warp_service():
-            current_ip = self._get_public_ip()
             self.interface = 'CloudflareWarp'
-            return {
-                'protected': True,
-                'current_ip': current_ip,
-                'original_ip': self.original_ip,
-                'interface': self.interface,
-                'method': 'warp-svc'
-            }
+            if self.original_ip and current_ip != self.original_ip:
+                return {
+                    'protected': True,
+                    'current_ip': current_ip,
+                    'original_ip': self.original_ip,
+                    'interface': self.interface,
+                    'method': 'warp-svc'
+                }
+            else:
+                return {
+                    'protected': False,
+                    'current_ip': current_ip,
+                    'original_ip': self.original_ip,
+                    'interface': self.interface,
+                    'method': 'warp-svc',
+                    'reason': f'Warp service active but IP unchanged ({current_ip})'
+                }
         
         if not self.is_vpn_active():
             return {'protected': False, 'reason': 'VPN interface not detected'}
         
-        current_ip = self._get_public_ip()
-        
-        # If interface is CloudflareWarp, trust it regardless of IP comparison
-        if self.interface == 'CloudflareWarp':
-            return {
-                'protected': True,
-                'current_ip': current_ip,
-                'original_ip': self.original_ip,
-                'interface': self.interface,
-                'method': 'warp-cli'
-            }
-        
+        # Generic VPN check — compare IPs
         if self.original_ip and current_ip == self.original_ip:
             return {'protected': False, 'reason': f'IP unchanged ({current_ip}) — VPN may not be routing traffic'}
         

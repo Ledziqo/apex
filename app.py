@@ -322,55 +322,42 @@ def toggle_vpn():
     try:
         from modules.anonymity.vpn_manager import vpn_manager
         if enabled:
-            vpn_manager.enabled = True
-            Config.VPN_ENABLED = True
+            # Store original IP before any VPN connection attempt
             vpn_manager.original_ip = vpn_manager._get_public_ip()
             
-            # Check if Warp is connected (primary method - uses improved path detection)
-            warp_connected = False
-            try:
-                warp_cli = vpn_manager._find_warp_cli()
-                if warp_cli:
-                    result = subprocess.run([warp_cli, 'status'], capture_output=True, text=True, timeout=5)
-                    warp_connected = 'Connected' in result.stdout
-                # Also check systemd service as fallback
-                if not warp_connected:
-                    warp_connected = vpn_manager._check_warp_service()
-            except Exception as warp_err:
-                print(f"[VPN] warp-cli check failed: {warp_err}")
-                # Fallback: check systemd service
-                try:
-                    warp_connected = vpn_manager._check_warp_service()
-                except:
-                    pass
+            # Use connect_and_verify() which actually checks if IP changes
+            result = vpn_manager.connect_and_verify(max_wait=30)
             
-            if warp_connected:
-                vpn_manager.interface = 'CloudflareWarp'
-                vpn_manager.current_ip = vpn_manager._get_public_ip()
-                # Warp is connected — trust it regardless of IP comparison
-                emit_feed('system', f'🟢 VPN PROTECTED via Warp — IP: {vpn_manager.current_ip}', 'success')
+            if result.get('protected'):
+                # REAL protection — IP actually changed
+                emit_feed('system', f'🟢 VPN PROTECTED — IP changed from {vpn_manager.original_ip} to {vpn_manager.current_ip}', 'success')
                 protection = {
                     'protected': True,
                     'current_ip': vpn_manager.current_ip,
                     'original_ip': vpn_manager.original_ip,
                     'interface': 'CloudflareWarp',
-                    'method': 'warp-cli'
+                    'method': 'warp-cli-verified'
                 }
                 socketio.emit('vpn_status', protection)
-                return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
-            
-            # Fallback: use improved is_vpn_active() which checks multiple methods
-            if vpn_manager.is_vpn_active():
-                vpn_manager.current_ip = vpn_manager._get_public_ip()
-                protection = vpn_manager.verify_protection()
-                if protection.get('protected'):
-                    emit_feed('system', f'🟢 VPN PROTECTED — IP: {vpn_manager.current_ip}', 'success')
-                    socketio.emit('vpn_status', protection)
-                    return jsonify({'vpn_enabled': True, 'vpn_active': True, 'protected': True, 'current_ip': vpn_manager.current_ip})
-            
-            # Always accept the toggle — show warning but don't revert
-            emit_feed('system', '🟡 VPN toggled ON but no VPN interface detected. Run: warp-cli connect', 'warning')
-            return jsonify({'vpn_enabled': True, 'vpn_active': False, 'protected': False, 'reason': 'No VPN detected, toggle accepted'})
+                return jsonify({
+                    'vpn_enabled': True, 
+                    'vpn_active': True, 
+                    'protected': True, 
+                    'current_ip': vpn_manager.current_ip,
+                    'original_ip': vpn_manager.original_ip
+                })
+            else:
+                # VPN not actually working — show real IP and warning
+                current_ip = vpn_manager._get_public_ip()
+                emit_feed('system', f'🔴 VPN toggled ON but NOT PROTECTED — IP is still {current_ip}. Run: warp-cli connect', 'error')
+                return jsonify({
+                    'vpn_enabled': True, 
+                    'vpn_active': False, 
+                    'protected': False, 
+                    'current_ip': current_ip,
+                    'original_ip': vpn_manager.original_ip,
+                    'reason': result.get('message', 'VPN not routing traffic — IP unchanged')
+                })
         else:
             vpn_manager.disable()
             Config.VPN_ENABLED = False
@@ -3180,6 +3167,61 @@ def api_browser_proxy():
     if result.get('success'):
         emit_feed('browser', f'Page loaded: {url}', 'info')
     return jsonify(result)
+
+@app.route('/api/browser/fetch', methods=['POST'])
+@login_required
+def api_browser_fetch():
+    """Fetch a page server-side and return HTML for srcdoc loading.
+    This bypasses X-Frame-Options, Cloudflare challenges, and CORS issues
+    by fetching the page through the server's anonymity layers (VPN/Tor/Proxy).
+    """
+    data = request.get_json()
+    url = data.get('url', '')
+    if not url: return jsonify({'error': 'URL required'}), 400
+    if not url.startswith('http'):
+        url = 'https://' + url
+    
+    try:
+        # Use the existing browser_proxy module which handles proxy routing
+        result = browser_proxy.fetch_page(url)
+        
+        if result.get('success'):
+            html = result.get('html', '')
+            page_info = result.get('page_info', {})
+            title = page_info.get('title', url) if page_info else url
+            
+            # Inject base tag so relative links work
+            base_tag = f'<base href="{result.get("url", url)}">'
+            if '<head>' in html:
+                html = html.replace('<head>', f'<head>{base_tag}')
+            elif '<html>' in html:
+                html = html.replace('<html>', f'<html><head>{base_tag}</head>')
+            else:
+                html = f'<html><head>{base_tag}</head><body>{html}</body></html>'
+            
+            emit_feed('browser', f'Page fetched: {title}', 'info')
+            return jsonify({
+                'success': True,
+                'html': html,
+                'url': result.get('url', url),
+                'title': title,
+                'status_code': result.get('status_code', 200)
+            })
+        else:
+            error = result.get('error', 'Failed to load page')
+            emit_feed('browser', f'Page fetch failed: {url} — {error}', 'error')
+            return jsonify({
+                'success': False,
+                'error': error,
+                'html': f'<html><body style="background:#000;color:#e53935;font-family:monospace;padding:40px;text-align:center;"><h2>Failed to Load</h2><p>{error}</p><p style="color:#666;font-size:12px;">{url}</p></body></html>'
+            })
+    except Exception as e:
+        emit_feed('browser', f'Page fetch error: {url} — {str(e)}', 'error')
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'html': f'<html><body style="background:#000;color:#e53935;font-family:monospace;padding:40px;text-align:center;"><h2>Error</h2><p>{str(e)}</p></body></html>'
+        })
 
 @app.route('/api/browser/view')
 @login_required

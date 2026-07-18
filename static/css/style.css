@@ -519,11 +519,11 @@ html, body {
 .tab.active { display: flex; }
 
 /* ============================================================
-   DASHBOARD GRID — 3 columns
+   DASHBOARD GRID — 3 columns (browser gets more space)
    ============================================================ */
 .dashboard-grid {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr;
+    grid-template-columns: 1fr 3fr 1fr;
     gap: 1px;
     flex: 1;
     overflow: hidden;

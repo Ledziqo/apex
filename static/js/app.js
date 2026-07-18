@@ -631,16 +631,41 @@ function toggleAnon(type) {
     }).then(function(r) { return r.json(); }).then(function(d) {
         if (type === 'proxy') {
             fetch('/api/proxy/health').then(function(r){return r.json();}).then(function(h) {
-                // Only warn if proxies ARE loaded but none are healthy
-                if (newState && h.total > 0 && !h.healthy) {
+                // Auto-fetch from GitHub if no proxies loaded
+                if (newState && h.total === 0) {
+                    toast('ℹ️ No proxies found — auto-fetching from GitHub...', 'info');
+                    addAiMsg('ai', 'ℹ️ No proxies loaded. Fetching from GitHub proxy list...');
+                    fetch('/api/proxy/fetch_github', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ proxy_type: 'all', replace: true })
+                    }).then(function(r) { return r.json(); }).then(function(fetchResult) {
+                        if (fetchResult.success && fetchResult.count > 0) {
+                            toast('✅ Fetched ' + fetchResult.count + ' proxies from GitHub', 'success');
+                            addAiMsg('ai', '✅ Auto-fetched ' + fetchResult.count + ' proxies from GitHub. Testing health...');
+                            // Re-check health after fetching
+                            setTimeout(function() {
+                                fetch('/api/proxy/health').then(function(r2){return r2.json();}).then(function(h2) {
+                                    if (h2.healthy > 0) {
+                                        toast('🟢 Proxy active — ' + h2.healthy + ' healthy proxies', 'success');
+                                        addAiMsg('ai', '️ Proxy enabled — ' + h2.healthy + ' healthy proxies. Traffic is being routed.');
+                                    } else {
+                                        toast('⚠️ Proxies fetched but none healthy', 'warning');
+                                        addAiMsg('ai', '⚠️ Proxies fetched from GitHub but none passed health check.');
+                                    }
+                                });
+                            }, 5000);
+                        } else {
+                            toast('⚠️ GitHub fetch failed: ' + (fetchResult.error || 'unknown'), 'error');
+                            addAiMsg('ai', '⚠️ Auto-fetch from GitHub failed: ' + (fetchResult.error || 'unknown'));
+                        }
+                    });
+                } else if (newState && h.total > 0 && !h.healthy) {
                     toast('⚠️ Proxy enabled but no healthy proxies found', 'warning');
                     addAiMsg('ai', '⚠️ Proxy toggled ON but no working proxies detected. Check your proxy list.');
                 } else if (newState && h.healthy > 0) {
                     toast('🟢 Proxy active — ' + h.healthy + ' healthy', 'success');
                     addAiMsg('ai', '🟢 Proxy enabled — ' + h.healthy + ' healthy proxies. Traffic is being routed.');
-                } else if (newState && h.total === 0) {
-                    toast('ℹ️ Proxy toggled ON — no proxies loaded yet. Add proxies in Settings.', 'info');
-                    addAiMsg('ai', 'ℹ️ Proxy toggled ON but no proxies loaded. Add proxy list in Settings.');
                 }
             });
         }
@@ -717,36 +742,43 @@ function loadBrowserUrl(url, andScan) {
     loadingUrl.textContent = url;
     
     var frame = document.getElementById('browserFrame');
-    frame.src = url;
     
-    var loadCheck = setInterval(function() {
-        try {
-            if (frame.contentDocument && frame.contentDocument.readyState === 'complete') {
-                clearInterval(loadCheck);
-                loading.classList.remove('show');
-                updateBrowserStatus(true);
-                if (andScan) {
-                    document.getElementById('targetInput').value = url;
-                    startScan(url);
-                }
-                toast('Page loaded', 'success');
-            }
-        } catch(e) {
-            clearInterval(loadCheck);
-            loading.classList.remove('show');
-            updateBrowserStatus(true);
-            if (andScan) {
-                document.getElementById('targetInput').value = url;
-                startScan(url);
-            }
-            toast('Page loaded', 'success');
-        }
-    }, 500);
-    
-    setTimeout(function() {
-        clearInterval(loadCheck);
+    // Use server-side fetch to bypass X-Frame-Options, Cloudflare checks, etc.
+    // The server fetches the page through anonymity layers and returns HTML for srcdoc
+    fetch('/api/browser/fetch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: url })
+    }).then(function(r) { return r.json(); }).then(function(d) {
         loading.classList.remove('show');
-    }, 15000);
+        
+        if (d.success && d.html) {
+            frame.srcdoc = d.html;
+            updateBrowserStatus(true);
+            toast('Page loaded via proxy', 'success');
+        } else {
+            // Fallback: try direct iframe load
+            frame.src = url;
+            updateBrowserStatus(false);
+            toast('Proxy fetch failed, loading directly: ' + (d.error || 'unknown'), 'warning');
+        }
+        
+        if (andScan) {
+            document.getElementById('targetInput').value = url;
+            startScan(url);
+        }
+    }).catch(function(err) {
+        loading.classList.remove('show');
+        // Fallback: direct iframe load
+        frame.src = url;
+        updateBrowserStatus(false);
+        toast('Proxy fetch error, loading directly', 'warning');
+        
+        if (andScan) {
+            document.getElementById('targetInput').value = url;
+            startScan(url);
+        }
+    });
 }
 
 function browserBack() {
