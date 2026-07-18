@@ -8,7 +8,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <div class="toast-container" id="toastContainer"></div>
@@ -35,6 +34,18 @@
         </div>
     </div>
 
+    <!-- VULNERABILITY DETAIL MODAL -->
+    <div class="vuln-detail-overlay" id="vulnDetailModal" onclick="if(event.target===this)closeVulnDetail()">
+        <div class="vuln-detail-modal">
+            <div class="vuln-detail-header">
+                <span id="vulnDetailTitle">Vulnerability Detail</span>
+                <button class="vuln-detail-close" onclick="closeVulnDetail()">✕</button>
+            </div>
+            <div class="vuln-detail-body" id="vulnDetailBody"></div>
+            <div class="vuln-detail-actions" id="vulnDetailActions"></div>
+        </div>
+    </div>
+
     <div class="app">
         <!-- SIDEBAR -->
         <nav class="sidebar">
@@ -57,11 +68,17 @@
         <div class="main">
             <!-- TOP BAR -->
             <div class="topbar">
-                <input type="text" id="targetInput" placeholder="Target URL (https://example.com)" class="target-input">
-                <button class="btn btn-orange" id="scanBtn" onclick="startScan()">🔍 SCAN</button>
-                <button class="btn btn-red" id="hackItBtn" onclick="hackIt()" style="background:#dc2626;border-color:#dc2626;font-weight:700;">☢️ HACK IT</button>
-                <button class="btn btn-red" id="nukeBtn" onclick="startNuke()">💣 NUKE</button>
-                <div class="toggles">
+                <div class="topbar-row topbar-main">
+                    <div class="target-input-wrap">
+                        <input type="text" id="targetInput" placeholder="Target URL (https://example.com)" class="target-input" onfocus="showTargetHistory()" onblur="hideTargetHistory()" autocomplete="off">
+                        <div class="target-history-dropdown" id="targetHistoryDropdown"></div>
+                    </div>
+                    <button class="btn" id="scanBtn" onclick="startScan()">🔍 SCAN</button>
+                    <button class="btn" id="hackItBtn" onclick="hackIt()">☢️ HACK IT</button>
+                    <button class="btn" id="nukeBtn" onclick="startNuke()">💣 NUKE</button>
+                    <span id="scanStatus" class="scan-status"></span>
+                </div>
+                <div class="topbar-row topbar-toggles">
                     <span class="toggle" id="proxyToggle" onclick="toggleAnon('proxy')">PROXY</span>
                     <span class="toggle" id="torToggle" onclick="toggleAnon('tor')">TOR</span>
                     <span class="toggle" id="vpnToggle" onclick="toggleAnon('vpn')">VPN</span>
@@ -69,99 +86,95 @@
                     <span class="toggle" id="wormToggle" onclick="toggleWormMode()" style="border-color:#22c55e;color:#22c55e;">🧬 WORM</span>
                     <button class="btn btn-sm btn-warp" id="connectWarpBtn" onclick="connectWarp()" title="Connect Cloudflare Warp">🛡️ WARP</button>
                 </div>
-                <span id="scanStatus" class="scan-status"></span>
+            </div>
+
+            <!-- SCAN PROGRESS BAR -->
+            <div class="scan-progress-bar-wrap">
+                <div class="scan-progress-bar" id="scanProgressBar"></div>
             </div>
 
             <!-- DASHBOARD TAB -->
             <div class="tab active" id="tab-dashboard">
                 <div class="dashboard-grid">
-                    <!-- BROWSER PANEL -->
+                    <!-- LEFT COLUMN: Browser + Timeline -->
                     <div class="panel browser-panel">
-                        <div class="panel-header">🌐 BROWSER <span id="browserStatus" class="browser-status-indicator"></span></div>
-                        <div class="browser-controls">
-                            <button class="btn btn-sm browser-nav-btn" onclick="browserBack()" title="Back">◀</button>
-                            <button class="btn btn-sm browser-nav-btn" onclick="browserForward()" title="Forward">▶</button>
-                            <button class="btn btn-sm browser-nav-btn" onclick="browserRefresh()" title="Refresh">↻</button>
-                            <input type="text" id="browserUrl" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserNavigate()">
-                            <button class="btn btn-orange btn-sm" onclick="browserNavigate()">GO</button>
-                        </div>
-                        <div class="browser-action-bar">
-                            <button class="btn btn-sm btn-action" onclick="browserAction('scan')">🔍 SCAN PAGE</button>
-                            <button class="btn btn-sm btn-action" onclick="browserAction('exploit')">💣 EXPLOIT</button>
-                            <button class="btn btn-sm btn-action" onclick="browserAction('fingerprint')">🖐️ FINGERPRINT</button>
-                            <button class="btn btn-sm btn-action" onclick="browserAction('analyze')">🤖 AI ANALYZE</button>
-                        </div>
-                        <div class="browser-frame-wrap">
-                            <div class="browser-loading" id="browserLoading">
-                                <span>🌐 Loading through proxy...</span>
-                                <span id="browserLoadingUrl"></span>
+                        <div class="panel-header">
+                            <span>🌐 BROWSER</span>
+                            <div class="panel-header-actions">
+                                <span id="browserStatus" class="browser-status-indicator"></span>
+                                <button class="panel-collapse-btn" id="browserCollapseBtn" onclick="toggleBrowser()" title="Toggle Browser">▾</button>
                             </div>
-                            <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" src="about:blank"></iframe>
+                        </div>
+                        <div class="browser-body" id="browserBody">
+                            <div class="browser-controls">
+                                <button class="btn btn-sm browser-nav-btn" onclick="browserBack()" title="Back">◀</button>
+                                <button class="btn btn-sm browser-nav-btn" onclick="browserForward()" title="Forward">▶</button>
+                                <button class="btn btn-sm browser-nav-btn" onclick="browserRefresh()" title="Refresh">↻</button>
+                                <input type="text" id="browserUrl" placeholder="Search or enter URL..." onkeydown="if(event.key==='Enter')browserNavigate()">
+                                <button class="btn btn-orange btn-sm" onclick="browserNavigate()">GO</button>
+                            </div>
+                            <div class="browser-action-bar">
+                                <button class="btn btn-sm btn-action" onclick="browserAction('scan')">🔍 SCAN</button>
+                                <button class="btn btn-sm btn-action" onclick="browserAction('exploit')">💣 EXPLOIT</button>
+                                <button class="btn btn-sm btn-action" onclick="browserAction('fingerprint')">🖐️ FINGER</button>
+                                <button class="btn btn-sm btn-action" onclick="browserAction('analyze')">🤖 AI</button>
+                            </div>
+                            <div class="browser-frame-wrap">
+                                <div class="browser-loading" id="browserLoading">
+                                    <span>🌐 Loading...</span>
+                                    <span id="browserLoadingUrl"></span>
+                                </div>
+                                <iframe id="browserFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups" src="about:blank"></iframe>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- RESULTS PANEL -->
+                    <!-- MIDDLE COLUMN: Results (takes center stage) -->
                     <div class="panel results-panel">
-                        <div class="panel-header">💣 RESULTS <span id="vulnCount">0</span></div>
+                        <div class="panel-header">
+                            <span>💣 RESULTS</span>
+                            <span id="vulnCount">0</span>
+                            <div class="panel-header-actions" id="resultsExportBar" style="display:none;">
+                                <button class="btn btn-sm" onclick="exportResultsCSV()">📥 CSV</button>
+                                <button class="btn btn-sm" onclick="exportResultsJSON()">📥 JSON</button>
+                            </div>
+                        </div>
+                        <div class="severity-filters" id="severityFilters" style="display:none;">
+                            <span class="sev-chip crit active" data-sev="critical" onclick="toggleSevFilter('critical')">CRIT</span>
+                            <span class="sev-chip high active" data-sev="high" onclick="toggleSevFilter('high')">HIGH</span>
+                            <span class="sev-chip med active" data-sev="medium" onclick="toggleSevFilter('medium')">MED</span>
+                            <span class="sev-chip low active" data-sev="low" onclick="toggleSevFilter('low')">LOW</span>
+                        </div>
                         <div class="panel-body" id="resultsPanel">
                             <div class="empty">Enter a target and click SCAN</div>
                         </div>
+                        <div class="results-pagination" id="resultsPagination" style="display:none;"></div>
                     </div>
 
-                    <!-- CHART PANEL -->
-                    <div class="panel chart-panel">
-                        <div class="panel-header">📊 VULNERABILITY DISTRIBUTION</div>
-                        <div class="panel-body" style="padding:10px;">
-                            <canvas id="vulnChart" width="200" height="200"></canvas>
-                        </div>
-                    </div>
-
-                    <!-- SCAN TIMELINE PANEL -->
-                    <div class="panel timeline-panel">
-                        <div class="panel-header">⏱️ SCAN PROGRESS</div>
-                        <div class="panel-body" id="timelinePanel">
-                            <div class="empty">No scan running</div>
-                        </div>
-                    </div>
-
-                    <!-- SAFETY STATUS PANEL (Dashboard) -->
+                    <!-- RIGHT COLUMN: Safety + Proxy Health + Batch -->
                     <div class="panel safety-dash-panel">
-                        <div class="panel-header">🛡️ SAFETY STATUS <span id="dashSafetyStatus"></span></div>
+                        <div class="panel-header">🛡️ SAFETY <span id="dashSafetyStatus"></span></div>
                         <div class="panel-body" id="dashSafetyBody">
-                            <div class="safety-dash-grid">
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">VPN</span>
-                                    <span class="safety-dash-value" id="dashSafetyVpn">---</span>
+                            <div class="safety-compact-card" id="safetyCompactCard">
+                                <div class="safety-compact-row">
+                                    <span class="safety-compact-dot inactive" id="dashSafetyVpnDot"></span>
+                                    <span class="safety-compact-label">VPN</span>
+                                    <span class="safety-compact-value" id="dashSafetyVpn">Inactive</span>
                                 </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Tor</span>
-                                    <span class="safety-dash-value" id="dashSafetyTor">---</span>
+                                <div class="safety-compact-row">
+                                    <span class="safety-compact-dot inactive" id="dashSafetyTorDot"></span>
+                                    <span class="safety-compact-label">Tor</span>
+                                    <span class="safety-compact-value" id="dashSafetyTor">Inactive</span>
                                 </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Proxy</span>
-                                    <span class="safety-dash-value" id="dashSafetyProxy">---</span>
-                                </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Ghost</span>
-                                    <span class="safety-dash-value" id="dashSafetyGhost">---</span>
-                                </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Hidden IP</span>
-                                    <span class="safety-dash-value mono" id="dashSafetyIp">---</span>
-                                </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Real IP</span>
-                                    <span class="safety-dash-value mono" id="dashSafetyRealIp">---</span>
-                                </div>
-                                <div class="safety-dash-item">
-                                    <span class="safety-dash-label">Status</span>
-                                    <span class="safety-dash-value" id="dashSafetyOverall">---</span>
+                                <div class="safety-compact-row">
+                                    <span class="safety-compact-dot inactive" id="dashSafetyProxyDot"></span>
+                                    <span class="safety-compact-label">Proxy</span>
+                                    <span class="safety-compact-value" id="dashSafetyProxy">Inactive</span>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- PROXY HEALTH PANEL -->
                     <div class="panel proxy-health-panel">
                         <div class="panel-header">🔗 PROXY HEALTH <span id="proxyHealthCount">0/0</span></div>
                         <div class="panel-body" id="proxyHealthBody">
@@ -169,33 +182,32 @@
                         </div>
                     </div>
 
-                    <!-- BATCH SCAN PANEL -->
                     <div class="panel batch-panel">
                         <div class="panel-header">📦 BATCH SCAN</div>
                         <div class="panel-body" id="batchPanelBody">
-                            <div style="display:flex;gap:8px;margin-bottom:8px;">
-                                <input type="text" id="batchTargetInput" placeholder="Add target URL..." style="flex:1;background:#1a1d26;color:#e2e4e9;border:1px solid #252836;border-radius:6px;padding:8px;font-size:12px;">
-                                <button class="btn btn-orange btn-sm" onclick="addBatchTarget()">➕ ADD</button>
+                            <div style="display:flex;gap:6px;margin-bottom:6px;">
+                                <input type="text" id="batchTargetInput" placeholder="Add target..." style="flex:1;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:6px;font-size:11px;">
+                                <button class="btn btn-orange btn-sm" onclick="addBatchTarget()">➕</button>
                             </div>
-                            <div id="batchTargetList" style="margin-bottom:8px;max-height:120px;overflow-y:auto;"></div>
-                            <div style="display:flex;gap:8px;">
-                                <button class="btn btn-sm" onclick="startBatchScan()" style="flex:1;">▶ SCAN ALL</button>
-                                <button class="btn btn-sm" onclick="clearBatchTargets()" style="flex:0;">🗑️</button>
+                            <div id="batchTargetList" style="margin-bottom:6px;max-height:80px;overflow-y:auto;"></div>
+                            <div style="display:flex;gap:6px;">
+                                <button class="btn btn-sm" onclick="startBatchScan()" style="flex:1;">▶ SCAN</button>
+                                <button class="btn btn-sm" onclick="clearBatchTargets()">🗑️</button>
                             </div>
-                            <div id="batchProgress" style="font-size:11px;color:#6b7280;margin-top:6px;"></div>
+                            <div id="batchProgress" style="font-size:10px;color:var(--text-muted);margin-top:4px;"></div>
                         </div>
                     </div>
 
-                    <!-- LIVE LOGS PANEL (Dashboard) -->
-                    <div class="panel logs-dash-panel">
-                        <div class="panel-header">📋 LIVE LOGS <span id="dashLogCount">0</span></div>
-                        <div class="panel-body logs-dash-container" id="dashLogsPanel">
-                            <div class="empty">No logs yet. Start a scan to see activity.</div>
+                    <!-- Timeline panel fills remaining space in right column -->
+                    <div class="panel timeline-panel">
+                        <div class="panel-header">⏱️ SCAN PROGRESS</div>
+                        <div class="panel-body" id="timelinePanel">
+                            <div class="empty">No scan running</div>
                         </div>
                     </div>
                 </div>
 
-                <!-- AI CHAT -->
+                <!-- AI CHAT (full width below grid) -->
                 <div class="ai-chat">
                     <div class="ai-messages" id="aiMessages">
                         <div class="ai-msg ai">APEX AI ready. Ask me about targets, vulnerabilities, or next steps.</div>
@@ -203,6 +215,14 @@
                     <div class="ai-input-row">
                         <textarea id="aiInput" placeholder="Ask AI..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAi();}"></textarea>
                         <button class="btn btn-orange btn-sm" onclick="sendAi()">▶</button>
+                    </div>
+                </div>
+
+                <!-- LIVE LOGS (scrollable feed) -->
+                <div class="dash-logs-bar">
+                    <div class="dash-logs-header">📋 LIVE LOGS <span id="dashLogCount">0</span></div>
+                    <div class="dash-logs-body" id="dashLogsPanel">
+                        <div class="empty">No logs yet. Start a scan to see activity.</div>
                     </div>
                 </div>
             </div>
@@ -332,13 +352,13 @@
                             <input type="text" id="setProxyFile" placeholder="data/proxies.txt">
                             <label>Proxy List (one per line)</label>
                             <textarea id="setProxyList" placeholder="socks5://user:pass@127.0.0.1:1080&#10;socks5://127.0.0.1:9050&#10;http://user:pass@proxy.example.com:8080" rows="4"></textarea>
-                            <div class="proxy-stats" id="proxyStats" style="font-size:12px;color:#6b7280;margin:8px 0;"></div>
+                            <div class="proxy-stats" id="proxyStats" style="font-size:12px;color:var(--text-muted);margin:8px 0;"></div>
                             <button class="btn btn-orange btn-sm" onclick="saveProxySettings()">💾 SAVE & TEST</button>
                             <button class="btn btn-sm" onclick="testProxies()">🔌 TEST ALL</button>
-                            <hr style="border-color:#252836;margin:12px 0;">
+                            <hr style="border-color:var(--border);margin:12px 0;">
                             <label>Fetch from GitHub</label>
                             <div style="display:flex;gap:8px;align-items:center;">
-                                <select id="proxyGithubType" style="flex:1;background:#1a1d26;color:#e2e4e9;border:1px solid #252836;border-radius:6px;padding:8px;font-size:12px;">
+                                <select id="proxyGithubType" style="flex:1;background:var(--bg-input);color:var(--text);border:1px solid var(--border);border-radius:2px;padding:6px;font-size:11px;">
                                     <option value="all">All Types</option>
                                     <option value="socks5">SOCKS5</option>
                                     <option value="socks4">SOCKS4</option>
@@ -347,15 +367,37 @@
                                 </select>
                                 <button class="btn btn-orange btn-sm" onclick="fetchProxiesFromGithub()">📥 FETCH</button>
                             </div>
-                            <div id="proxyFetchResult" style="font-size:11px;color:#6b7280;margin-top:6px;"></div>
+                            <div id="proxyFetchResult" style="font-size:10px;color:var(--text-muted);margin-top:6px;"></div>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- BOTTOM STATUS BAR -->
+            <div class="bottom-status-bar">
+                <div class="bottom-status-item">
+                    <span class="bottom-status-dot online" id="bottomConnDot"></span>
+                    <span id="bottomConnText">ONLINE</span>
+                </div>
+                <span class="bottom-status-sep"></span>
+                <div class="bottom-status-item">
+                    <span>🛡️</span>
+                    <span id="bottomLayers">0 layers</span>
+                </div>
+                <span class="bottom-status-sep"></span>
+                <div class="bottom-status-item">
+                    <span>⏱️</span>
+                    <span id="bottomLastScan">No scans yet</span>
+                </div>
+                <span class="bottom-status-sep"></span>
+                <div class="bottom-status-item" style="margin-left:auto;">
+                    <span>🔺 APEX v4.0</span>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
-    <script src="/static/js/app.js?v=7"></script>
+    <script src="/static/js/app.js?v=9"></script>
 </body>
 </html>
