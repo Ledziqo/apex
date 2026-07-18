@@ -13,26 +13,6 @@
 <body>
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- KEYBOARD SHORTCUTS MODAL -->
-    <div class="modal-overlay" id="shortcutsModal" style="display:none;" onclick="if(event.target===this)document.getElementById('shortcutsModal').style.display='none'">
-        <div class="modal-content" style="max-width:500px;">
-            <div class="modal-header">
-                <span>⌨️ Keyboard Shortcuts</span>
-                <button class="modal-close" onclick="document.getElementById('shortcutsModal').style.display='none'">✕</button>
-            </div>
-            <div class="modal-body" style="padding:20px;">
-                <div class="shortcut-row"><kbd>?</kbd> <span>Toggle this help modal</span></div>
-                <div class="shortcut-row"><kbd>Enter</kbd> <span>Start scan on current target</span></div>
-                <div class="shortcut-row"><kbd>Ctrl+Enter</kbd> <span>HACK IT (full autopilot)</span></div>
-                <div class="shortcut-row"><kbd>N</kbd> <span>NUKE mode</span></div>
-                <div class="shortcut-row"><kbd>T</kbd> <span>Toggle theme (dark/light)</span></div>
-                <div class="shortcut-row"><kbd>G</kbd> <span>Toggle Ghost Mode</span></div>
-                <div class="shortcut-row"><kbd>W</kbd> <span>Toggle Worm Mode</span></div>
-                <div class="shortcut-row"><kbd>1-4</kbd> <span>Switch tabs (1=Dashboard, 2=History, 3=Logs, 4=Safety)</span></div>
-            </div>
-        </div>
-    </div>
-
     <!-- PREVIEW/EDITOR MODAL -->
     <div class="modal-overlay" id="previewModal" onclick="if(event.target===this)closePreviewModal()">
         <div class="modal-content editor-modal">
@@ -86,6 +66,7 @@
                     <span class="toggle" id="torToggle" onclick="toggleAnon('tor')">TOR</span>
                     <span class="toggle" id="vpnToggle" onclick="toggleAnon('vpn')">VPN</span>
                     <span class="toggle" id="ghostToggle" onclick="toggleGhostMode()" style="border-color:#8b5cf6;color:#8b5cf6;">👻 GHOST</span>
+                    <span class="toggle" id="wormToggle" onclick="toggleWormMode()" style="border-color:#22c55e;color:#22c55e;">🧬 WORM</span>
                     <button class="btn btn-sm btn-warp" id="connectWarpBtn" onclick="connectWarp()" title="Connect Cloudflare Warp">🛡️ WARP</button>
                 </div>
                 <span id="scanStatus" class="scan-status"></span>

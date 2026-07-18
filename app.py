@@ -1417,7 +1417,26 @@ def run_full_scan(scan_id, target, scan_type):
             emit_feed(scan_id, f'Scanning for {name}...', 'info')
             # Emit live scan step for frontend
             socketio.emit('scan_step', {'scan_id': scan_id, 'scanner': name, 'status': 'scanning', 'found': 0})
-            results = scanner_func(target, discovered)
+            # Run scanner with timeout to prevent hanging
+            results = []
+            try:
+                import queue
+                q = queue.Queue()
+                def _run_scanner():
+                    try:
+                        q.put(scanner_func(target, discovered))
+                    except Exception as e:
+                        q.put([])
+                t = threading.Thread(target=_run_scanner, daemon=True)
+                t.start()
+                t.join(timeout=30)  # 30 second timeout per scanner
+                if t.is_alive():
+                    emit_feed(scan_id, f'⚠ {name} scanner timed out (30s) — skipping', 'warning')
+                    results = []
+                else:
+                    results = q.get_nowait() if not q.empty() else []
+            except:
+                results = []
             found_count = len(results)
             for v in results:
                 all_vulns.append(v)

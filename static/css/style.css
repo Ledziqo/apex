@@ -2,6 +2,38 @@
    APEX — Dark/Light Theme with v4.0 Upgrades
    ============================================================ */
 
+/* Responsive fixes for small browser windows */
+@media (max-width: 1200px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+    .browser-panel { grid-column: 1 / -1 !important; }
+    .results-panel { grid-column: 1 / -1 !important; }
+    .logs-dash-panel { grid-column: 1 / -1 !important; }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+    .sidebar { display: none !important; }
+    .main { margin-left: 0 !important; }
+    .topbar { flex-wrap: wrap; gap: 4px; }
+    .topbar .target-input { width: 100% !important; }
+    .toggles { flex-wrap: wrap; }
+    .browser-frame-wrap { height: 300px !important; }
+    .ai-chat { max-height: 200px !important; }
+    .safety-dash-grid { grid-template-columns: 1fr 1fr !important; }
+}
+
+@media (max-width: 480px) {
+    .topbar .btn { font-size: 10px !important; padding: 4px 8px !important; }
+    .toggles .toggle { font-size: 9px !important; padding: 2px 6px !important; }
+    .browser-controls { flex-wrap: wrap; }
+    .browser-action-bar { flex-wrap: wrap; }
+    .panel-header { font-size: 11px !important; }
+}
+
 :root {
     --bg: #000000;
     --bg-panel: #0a0a0a;

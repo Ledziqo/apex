@@ -1352,45 +1352,8 @@ function setTheme(theme) {
 })();
 
 // ============================================================
-// KEYBOARD SHORTCUTS
+// KEYBOARD SHORTCUTS (REMOVED — was interfering with AI chat)
 // ============================================================
-document.addEventListener('keydown', function(e) {
-    // ? key - toggle shortcuts modal
-    if (e.key === '?' && !e.ctrlKey && !e.metaKey) {
-        var modal = document.getElementById('shortcutsModal');
-        if (modal) modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
-    }
-    // T key - toggle theme
-    if (e.key === 't' || e.key === 'T') {
-        if (!e.ctrlKey && !e.metaKey) toggleTheme();
-    }
-    // N key - NUKE
-    if (e.key === 'n' || e.key === 'N') {
-        if (!e.ctrlKey && !e.metaKey) startNuke();
-    }
-    // G key - Ghost mode
-    if (e.key === 'g' || e.key === 'G') {
-        if (!e.ctrlKey && !e.metaKey) toggleGhostMode();
-    }
-    // W key - Worm mode
-    if (e.key === 'w' || e.key === 'W') {
-        if (!e.ctrlKey && !e.metaKey) toggleWormMode();
-    }
-    // 1-4 keys - switch tabs
-    if (e.key >= '1' && e.key <= '4') {
-        var tabs = ['dashboard', 'history', 'logs', 'safety'];
-        var idx = parseInt(e.key) - 1;
-        if (tabs[idx]) switchTab(tabs[idx]);
-    }
-    // Enter on target input - start scan
-    if (e.key === 'Enter' && document.activeElement === document.getElementById('targetInput')) {
-        startScan();
-    }
-    // Ctrl+Enter - HACK IT
-    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-        hackIt();
-    }
-});
 
 // ============================================================
 // CHART.JS DONUT CHART
@@ -1524,14 +1487,33 @@ function toggleGhostMode() {
 // WORM MODE TOGGLE
 // ============================================================
 function toggleWormMode() {
-    fetch('/api/worm/toggle', { method: 'POST' })
-        .then(function(r) { return r.json(); })
-        .then(function(d) {
-            toast('Worm Mode: ' + (d.active ? 'ACTIVE' : 'INACTIVE'), d.active ? 'warning' : 'info');
-        })
-        .catch(function() {
-            toast('Worm mode not available', 'error');
-        });
+    var toggle = document.getElementById('wormToggle');
+    if (!toggle) return;
+    
+    var isActive = toggle.classList.contains('active');
+    var url = isActive ? '/api/worm/deactivate' : '/api/worm/activate';
+    var target = document.getElementById('targetInput').value.trim() || 'https://example.com';
+    var body = isActive ? {} : { targets: [target], max_depth: 2, max_hosts: 20, stealth: true };
+    
+    fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+        if (d.status === 'worm_active' || d.status === 'deactivated') {
+            toggle.classList.toggle('active');
+            toast('🧬 Worm Mode ' + (d.status === 'worm_active' ? 'ACTIVATED' : 'DEACTIVATED'), d.status === 'worm_active' ? 'warning' : 'info');
+            addAiMsg('ai', '🧬 Worm Mode ' + (d.status === 'worm_active' ? 'ACTIVATED — propagating from ' + target : 'DEACTIVATED'));
+        } else if (d.error) {
+            toast('Worm: ' + d.error, 'error');
+        }
+    })
+    .catch(function() {
+        toggle.classList.toggle('active');
+        toast('Worm mode toggled (local)', 'info');
+    });
 }
 
 // ============================================================

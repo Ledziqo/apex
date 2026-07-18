@@ -101,14 +101,20 @@ class ProxyManager:
         return None
     
     def check_proxy(self, proxy):
-        """Test if a proxy is working"""
-        try:
-            test_url = 'http://httpbin.org/ip'
-            proxies = {'http': proxy, 'https': proxy}
-            r = requests.get(test_url, proxies=proxies, timeout=5)
-            return r.status_code == 200
-        except:
-            return False
+        """Test if a proxy is working. Returns dict with healthy and response_time."""
+        import time
+        test_urls = ['http://httpbin.org/ip', 'https://api.ipify.org', 'http://ip-api.com/json']
+        proxies = {'http': proxy, 'https': proxy}
+        for test_url in test_urls:
+            try:
+                start = time.time()
+                r = requests.get(test_url, proxies=proxies, timeout=5)
+                elapsed = time.time() - start
+                if r.status_code == 200:
+                    return {'healthy': True, 'response_time': round(elapsed * 1000)}
+            except:
+                continue
+        return {'healthy': False, 'response_time': 0}
     
     def health_check(self):
         """Check all proxies and remove dead ones"""
@@ -134,17 +140,18 @@ class ProxyManager:
         
         for proxy in self.proxies[:10]:  # Check up to 10
             status = self.check_proxy(proxy)
+            is_healthy = status.get('healthy', False) if isinstance(status, dict) else bool(status)
             results.append({
                 'proxy': proxy[:50] + '...' if len(proxy) > 50 else proxy,
-                'healthy': status,
-                'response_time': status.get('response_time', 0) if status else 0
+                'healthy': is_healthy,
+                'response_time': status.get('response_time', 0) if isinstance(status, dict) else 0
             })
-            if status:
+            if is_healthy:
                 healthy_count += 1
         
         # Auto-rotate dead proxies out
         if healthy_count < len(self.proxies):
-            self.proxies = [p for p in self.proxies if self.check_proxy(p)]
+            self.proxies = [p for p in self.proxies if isinstance(self.check_proxy(p), dict) and self.check_proxy(p).get('healthy', False)]
         
         return {
             'total': len(self.proxies),
